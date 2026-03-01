@@ -14,19 +14,19 @@ export function SummaryCards({ totalIncome, totalExpense, balance }: SummaryCard
       <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-sm font-medium">Receitas</CardTitle>
-          <TrendingUp className="h-4 w-4 text-green-600" />
+          <TrendingUp className="h-4 w-4 text-emerald-600" />
         </CardHeader>
         <CardContent>
-          <p className="text-2xl font-bold text-green-600">{formatCurrency(totalIncome)}</p>
+          <p className="text-2xl font-semibold font-mono tabular-nums text-emerald-600">{formatCurrency(totalIncome)}</p>
         </CardContent>
       </Card>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-sm font-medium">Despesas</CardTitle>
-          <TrendingDown className="h-4 w-4 text-red-600" />
+          <TrendingDown className="h-4 w-4 text-rose-600" />
         </CardHeader>
         <CardContent>
-          <p className="text-2xl font-bold text-red-600">{formatCurrency(totalExpense)}</p>
+          <p className="text-2xl font-semibold font-mono tabular-nums text-rose-600">{formatCurrency(totalExpense)}</p>
         </CardContent>
       </Card>
       <Card>
@@ -35,7 +35,7 @@ export function SummaryCards({ totalIncome, totalExpense, balance }: SummaryCard
           <Wallet className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <p className={`text-2xl font-bold ${balance >= 0 ? "text-green-600" : "text-red-600"}`}>
+          <p className={`text-2xl font-semibold font-mono tabular-nums ${balance >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
             {formatCurrency(Math.abs(balance))}
           </p>
         </CardContent>

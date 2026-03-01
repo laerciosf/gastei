@@ -10,8 +10,8 @@ export default async function DashboardPage() {
   ]);
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Dashboard</h2>
+    <div className="space-y-8">
+      <h2 className="text-xl font-semibold">Dashboard</h2>
       <SummaryCards
         totalIncome={summary.totalIncome}
         totalExpense={summary.totalExpense}

@@ -75,7 +75,7 @@ export function TransactionsList({ transactions, categories }: TransactionsListP
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <span className={`font-semibold ${tx.type === "INCOME" ? "text-green-600" : "text-red-600"}`}>
+              <span className={`font-semibold font-mono tabular-nums ${tx.type === "INCOME" ? "text-emerald-600" : "text-rose-600"}`}>
                 {tx.type === "INCOME" ? "+" : "-"} {formatCurrency(tx.amount)}
               </span>
               <Button variant="ghost" size="icon" onClick={() => handleEdit(tx)}>

@@ -83,12 +83,12 @@ export function BudgetList({ budgets, categories, currentMonth }: BudgetListProp
                   </div>
                   <div className="mt-2 h-2 rounded-full bg-secondary">
                     <div
-                      className={`h-full rounded-full transition-all ${isOverBudget ? "bg-red-500" : "bg-primary"}`}
+                      className={`h-full rounded-full transition-all ${isOverBudget ? "bg-rose-500" : "bg-primary"}`}
                       style={{ width: `${percentage}%` }}
                     />
                   </div>
                   {isOverBudget && (
-                    <p className="mt-1 text-xs text-red-500">
+                    <p className="mt-1 text-xs text-rose-500">
                       Excedido em {formatCurrency(budget.spent - budget.amount)}
                     </p>
                   )}

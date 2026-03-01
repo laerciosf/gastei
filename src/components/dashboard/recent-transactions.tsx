@@ -34,7 +34,7 @@ export function RecentTransactions({ transactions }: { transactions: Transaction
                     </p>
                   </div>
                 </div>
-                <span className={`text-sm font-semibold ${tx.type === "INCOME" ? "text-green-600" : "text-red-600"}`}>
+                <span className={`text-sm font-semibold font-mono tabular-nums ${tx.type === "INCOME" ? "text-emerald-600" : "text-rose-600"}`}>
                   {tx.type === "INCOME" ? "+" : "-"} {formatCurrency(tx.amount)}
                 </span>
               </div>

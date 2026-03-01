@@ -21,8 +21,8 @@ export default async function TransactionsPage({ searchParams }: Props) {
   ]);
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Transações</h2>
+    <div className="space-y-8">
+      <h2 className="text-xl font-semibold">Transações</h2>
       <TransactionsList transactions={transactions} categories={categories} />
     </div>
   );

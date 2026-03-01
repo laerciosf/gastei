@@ -9,15 +9,15 @@ export default async function HouseholdPage() {
   if (!household) {
     return (
       <div>
-        <h2 className="text-2xl font-bold">Household</h2>
+        <h2 className="text-xl font-semibold">Household</h2>
         <p className="text-muted-foreground">Nenhum household encontrado.</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Household</h2>
+    <div className="space-y-8">
+      <h2 className="text-xl font-semibold">Household</h2>
       <HouseholdMembers household={household} currentUserId={session.user.id} />
     </div>
   );
