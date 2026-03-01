@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { inviteMember, removeMember } from "@/lib/actions/household";
+import { toast } from "sonner";
 
 interface Member {
   id: string;
@@ -25,20 +26,19 @@ interface Household {
 
 export function HouseholdMembers({ household, currentUserId }: { household: Household; currentUserId: string }) {
   const [inviteOpen, setInviteOpen] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function handleInvite(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
-    setError(null);
 
     const formData = new FormData(e.currentTarget);
     const result = await inviteMember(formData);
 
     if (result.error) {
-      setError(result.error);
+      toast.error(result.error);
     } else {
+      toast.success("Membro convidado");
       setInviteOpen(false);
     }
     setLoading(false);
@@ -47,7 +47,11 @@ export function HouseholdMembers({ household, currentUserId }: { household: Hous
   async function handleRemove(userId: string, name: string | null) {
     if (!confirm(`Remover ${name ?? "este membro"} do household?`)) return;
     const result = await removeMember(userId);
-    if (result.error) alert(result.error);
+    if (result.error) {
+      toast.error(result.error);
+    } else {
+      toast.success("Membro removido");
+    }
   }
 
   return (
@@ -91,9 +95,6 @@ export function HouseholdMembers({ household, currentUserId }: { household: Hous
             <DialogTitle>Convidar Membro</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleInvite} className="space-y-4">
-            {error && (
-              <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</div>
-            )}
             <div className="space-y-2">
               <Label htmlFor="email">Email do membro</Label>
               <Input id="email" name="email" type="email" placeholder="membro@email.com" required />

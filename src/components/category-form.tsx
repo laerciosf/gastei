@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { createCategory, updateCategory } from "@/lib/actions/categories";
+import { toast } from "sonner";
 
 interface CategoryFormProps {
   open: boolean;
@@ -15,14 +16,12 @@ interface CategoryFormProps {
 }
 
 export function CategoryForm({ open, onOpenChange, category }: CategoryFormProps) {
-  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const isEditing = !!category;
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
-    setError(null);
 
     const formData = new FormData(e.currentTarget);
     const result = isEditing
@@ -30,9 +29,10 @@ export function CategoryForm({ open, onOpenChange, category }: CategoryFormProps
       : await createCategory(formData);
 
     if (result.error) {
-      setError(result.error);
+      toast.error(result.error);
       setLoading(false);
     } else {
+      toast.success("Categoria salva");
       onOpenChange(false);
       setLoading(false);
     }
@@ -45,11 +45,6 @@ export function CategoryForm({ open, onOpenChange, category }: CategoryFormProps
           <DialogTitle>{isEditing ? "Editar" : "Nova"} Categoria</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {error && (
-            <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-              {error}
-            </div>
-          )}
           <div className="space-y-2">
             <Label htmlFor="name">Nome</Label>
             <Input id="name" name="name" defaultValue={category?.name} required />

@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Card, CardContent } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils/money";
 import { upsertBudget, deleteBudget, type BudgetWithSpent } from "@/lib/actions/budget";
+import { toast } from "sonner";
 
 interface Category {
   id: string;
@@ -25,7 +26,6 @@ interface BudgetListProps {
 
 export function BudgetList({ budgets, categories, currentMonth }: BudgetListProps) {
   const [formOpen, setFormOpen] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const expenseCategories = categories.filter((c) => c.type === "EXPENSE");
@@ -33,15 +33,15 @@ export function BudgetList({ budgets, categories, currentMonth }: BudgetListProp
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
-    setError(null);
 
     const formData = new FormData(e.currentTarget);
     formData.set("month", currentMonth);
 
     const result = await upsertBudget(formData);
     if (result.error) {
-      setError(result.error);
+      toast.error(result.error);
     } else {
+      toast.success("Orçamento salvo");
       setFormOpen(false);
     }
     setLoading(false);
@@ -49,7 +49,12 @@ export function BudgetList({ budgets, categories, currentMonth }: BudgetListProp
 
   async function handleDelete(id: string) {
     if (!confirm("Remover este orçamento?")) return;
-    await deleteBudget(id);
+    const result = await deleteBudget(id);
+    if (result.error) {
+      toast.error(result.error);
+    } else {
+      toast.success("Orçamento removido");
+    }
   }
 
   return (
@@ -109,9 +114,6 @@ export function BudgetList({ budgets, categories, currentMonth }: BudgetListProp
             <DialogTitle>Definir Orçamento</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</div>
-            )}
             <div className="space-y-2">
               <Label htmlFor="categoryId">Categoria</Label>
               <Select name="categoryId">

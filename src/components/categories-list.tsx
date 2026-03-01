@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CategoryForm } from "@/components/category-form";
 import { deleteCategory } from "@/lib/actions/categories";
+import { toast } from "sonner";
 
 interface Category {
   id: string;
@@ -35,7 +36,11 @@ export function CategoriesList({ categories }: { categories: Category[] }) {
   async function handleDelete(id: string) {
     if (!confirm("Tem certeza que deseja excluir esta categoria?")) return;
     const result = await deleteCategory(id);
-    if (result.error) alert(result.error);
+    if (result.error) {
+      toast.error(result.error);
+    } else {
+      toast.success("Categoria excluída");
+    }
   }
 
   function renderCategory(category: Category) {

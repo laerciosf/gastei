@@ -6,23 +6,22 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { updateProfile } from "@/lib/actions/settings";
+import { toast } from "sonner";
 
 export function SettingsForm({ user }: { user: { name: string; email: string } }) {
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
-    setMessage(null);
 
     const formData = new FormData(e.currentTarget);
     const result = await updateProfile(formData);
 
     if (result.error) {
-      setMessage(result.error);
+      toast.error(result.error);
     } else {
-      setMessage("Perfil atualizado com sucesso");
+      toast.success("Perfil atualizado");
     }
     setLoading(false);
   }
@@ -34,9 +33,6 @@ export function SettingsForm({ user }: { user: { name: string; email: string } }
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {message && (
-            <div className="rounded-md bg-primary/10 p-3 text-sm">{message}</div>
-          )}
           <div className="space-y-2">
             <Label htmlFor="name">Nome</Label>
             <Input id="name" name="name" defaultValue={user.name} required />

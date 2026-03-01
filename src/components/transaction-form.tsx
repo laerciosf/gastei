@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { createTransaction, updateTransaction } from "@/lib/actions/transactions";
+import { toast } from "sonner";
 
 interface Category {
   id: string;
@@ -31,7 +32,6 @@ interface TransactionFormProps {
 }
 
 export function TransactionForm({ open, onOpenChange, categories, transaction }: TransactionFormProps) {
-  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [type, setType] = useState(transaction?.type ?? "EXPENSE");
   const isEditing = !!transaction;
@@ -41,7 +41,6 @@ export function TransactionForm({ open, onOpenChange, categories, transaction }:
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
-    setError(null);
 
     const formData = new FormData(e.currentTarget);
     formData.set("type", type);
@@ -51,9 +50,10 @@ export function TransactionForm({ open, onOpenChange, categories, transaction }:
       : await createTransaction(formData);
 
     if (result.error) {
-      setError(result.error);
+      toast.error(result.error);
       setLoading(false);
     } else {
+      toast.success("Transação salva");
       onOpenChange(false);
       setLoading(false);
     }
@@ -66,11 +66,6 @@ export function TransactionForm({ open, onOpenChange, categories, transaction }:
           <DialogTitle>{isEditing ? "Editar" : "Nova"} Transação</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {error && (
-            <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-              {error}
-            </div>
-          )}
           <div className="flex gap-2">
             <Button
               type="button"

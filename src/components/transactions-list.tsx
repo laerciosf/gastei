@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { TransactionForm } from "@/components/transaction-form";
 import { deleteTransaction } from "@/lib/actions/transactions";
 import { formatCurrency } from "@/lib/utils/money";
+import { toast } from "sonner";
 
 interface Transaction {
   id: string;
@@ -46,7 +47,12 @@ export function TransactionsList({ transactions, categories }: TransactionsListP
 
   async function handleDelete(id: string) {
     if (!confirm("Tem certeza que deseja excluir esta transação?")) return;
-    await deleteTransaction(id);
+    const result = await deleteTransaction(id);
+    if (result.error) {
+      toast.error(result.error);
+    } else {
+      toast.success("Transação excluída");
+    }
   }
 
   return (
