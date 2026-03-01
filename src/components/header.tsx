@@ -11,8 +11,7 @@ export async function Header() {
     .toUpperCase() ?? "?";
 
   return (
-    <header className="flex h-16 items-center justify-between border-b px-6">
-      <div />
+    <header className="hidden h-14 items-center justify-end border-b px-6 lg:flex">
       <div className="flex items-center gap-4">
         <ThemeToggle />
         <div className="flex items-center gap-2">

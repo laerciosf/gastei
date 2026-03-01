@@ -7,7 +7,7 @@ import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
-const navItems = [
+export const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/transactions", label: "Transações", icon: ArrowLeftRight },
   { href: "/categories", label: "Categorias", icon: Tag },
@@ -20,9 +20,9 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="flex h-screen w-64 flex-col border-r bg-card">
-      <div className="flex h-16 items-center border-b px-6">
-        <h1 className="text-xl font-bold">Gastei</h1>
+    <aside className="hidden h-screen w-64 flex-col border-r bg-card lg:flex">
+      <div className="flex h-14 items-center border-b px-6">
+        <h1 className="text-lg font-semibold">Gastei</h1>
       </div>
       <nav className="flex-1 space-y-1 p-4">
         {navItems.map((item) => (
@@ -30,7 +30,7 @@ export function Sidebar() {
             key={item.href}
             href={item.href}
             className={cn(
-              "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
               pathname === item.href
                 ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
