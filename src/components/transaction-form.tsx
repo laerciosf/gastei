@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -89,15 +90,11 @@ export function TransactionForm({ open, onOpenChange, categories, transaction }:
             <Input id="description" name="description" defaultValue={transaction?.description} required />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="amount">Valor (R$)</Label>
-            <Input
+            <Label htmlFor="amount">Valor</Label>
+            <CurrencyInput
               id="amount"
               name="amount"
-              type="number"
-              step="0.01"
-              min="0.01"
-              defaultValue={transaction ? (transaction.amount / 100).toFixed(2) : undefined}
-              required
+              defaultValueCents={transaction?.amount ?? 0}
             />
           </div>
           <div className="space-y-2">

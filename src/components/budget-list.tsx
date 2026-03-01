@@ -3,11 +3,12 @@
 import { useState } from "react";
 import { Plus, Trash2, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { formatCurrency } from "@/lib/utils/money";
 import { upsertBudget, deleteBudget, type BudgetWithSpent } from "@/lib/actions/budget";
 import { toast } from "sonner";
@@ -27,6 +28,8 @@ interface BudgetListProps {
 export function BudgetList({ budgets, categories, currentMonth }: BudgetListProps) {
   const [formOpen, setFormOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const expenseCategories = categories.filter((c) => c.type === "EXPENSE");
 
@@ -47,14 +50,17 @@ export function BudgetList({ budgets, categories, currentMonth }: BudgetListProp
     setLoading(false);
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm("Remover este orçamento?")) return;
-    const result = await deleteBudget(id);
+  async function handleDelete() {
+    if (!deleteId) return;
+    setDeleting(true);
+    const result = await deleteBudget(deleteId);
     if (result.error) {
       toast.error(result.error);
     } else {
       toast.success("Orçamento removido");
     }
+    setDeleting(false);
+    setDeleteId(null);
   }
 
   return (
@@ -77,7 +83,7 @@ export function BudgetList({ budgets, categories, currentMonth }: BudgetListProp
                     <div className="h-3 w-3 rounded-full" style={{ backgroundColor: budget.category.color }} />
                     <span className="font-medium">{budget.category.name}</span>
                   </div>
-                  <Button variant="ghost" size="icon" onClick={() => handleDelete(budget.id)}>
+                  <Button variant="ghost" size="icon" onClick={() => setDeleteId(budget.id)}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
@@ -135,8 +141,8 @@ export function BudgetList({ budgets, categories, currentMonth }: BudgetListProp
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="amount">Limite (R$)</Label>
-              <Input id="amount" name="amount" type="number" step="0.01" min="0.01" required />
+              <Label htmlFor="amount">Limite</Label>
+              <CurrencyInput id="amount" name="amount" />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Salvando..." : "Salvar"}
@@ -144,6 +150,15 @@ export function BudgetList({ budgets, categories, currentMonth }: BudgetListProp
           </form>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={!!deleteId}
+        onOpenChange={(open) => !open && setDeleteId(null)}
+        title="Remover orçamento"
+        description="Tem certeza que deseja remover este orçamento?"
+        onConfirm={handleDelete}
+        loading={deleting}
+      />
     </>
   );
 }
