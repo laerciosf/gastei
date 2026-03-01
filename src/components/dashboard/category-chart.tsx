@@ -21,7 +21,7 @@ export function CategoryChart({ data }: { data: CategoryData[] }) {
           <CardTitle>Despesas por Categoria</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="py-8 text-center text-muted-foreground">Sem despesas neste mes</p>
+          <p className="py-8 text-center text-muted-foreground">Sem despesas neste mês</p>
         </CardContent>
       </Card>
     );

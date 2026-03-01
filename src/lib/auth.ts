@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { verifyPassword } from "@/lib/password";
 import { loginSchema } from "@/lib/validations/auth";
 import { authConfig } from "@/lib/auth.config";
+import { createHouseholdForUser } from "@/lib/setup-household";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
@@ -48,9 +49,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) {
         const dbUser = await prisma.user.findUnique({
           where: { id: user.id! },
-          select: { householdId: true },
+          select: { householdId: true, name: true },
         });
-        token.householdId = dbUser?.householdId;
+
+        if (!dbUser?.householdId) {
+          token.householdId = await createHouseholdForUser(
+            user.id!,
+            dbUser?.name ?? user.name ?? "Meu"
+          );
+        } else {
+          token.householdId = dbUser.householdId;
+        }
       }
       return token;
     },

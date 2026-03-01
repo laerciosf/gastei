@@ -9,11 +9,11 @@ import { Button } from "@/components/ui/button";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/transactions", label: "Transacoes", icon: ArrowLeftRight },
+  { href: "/transactions", label: "Transações", icon: ArrowLeftRight },
   { href: "/categories", label: "Categorias", icon: Tag },
-  { href: "/budget", label: "Orcamento", icon: Target },
+  { href: "/budget", label: "Orçamento", icon: Target },
   { href: "/household", label: "Household", icon: Users },
-  { href: "/settings", label: "Configuracoes", icon: Settings },
+  { href: "/settings", label: "Configurações", icon: Settings },
 ];
 
 export function Sidebar() {

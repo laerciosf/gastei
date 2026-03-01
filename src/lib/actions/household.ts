@@ -6,7 +6,7 @@ import { requireAuth } from "@/lib/auth-guard";
 import { z } from "zod/v4";
 
 const inviteSchema = z.object({
-  email: z.email("Email invalido"),
+  email: z.email("Email inválido"),
 });
 
 export async function getHousehold() {
@@ -24,7 +24,7 @@ export async function getHousehold() {
 export async function inviteMember(formData: FormData) {
   const session = await requireAuth();
   if (!session.user.householdId) {
-    return { error: "Household nao encontrado" };
+    return { error: "Household não encontrado" };
   }
 
   const parsed = inviteSchema.safeParse({ email: formData.get("email") });
@@ -37,11 +37,11 @@ export async function inviteMember(formData: FormData) {
   });
 
   if (!user) {
-    return { error: "Usuario nao encontrado. Ele precisa criar uma conta primeiro." };
+    return { error: "Usuário não encontrado. Ele precisa criar uma conta primeiro." };
   }
 
   if (user.householdId === session.user.householdId) {
-    return { error: "Usuario ja faz parte deste household" };
+    return { error: "Usuário já faz parte deste household" };
   }
 
   await prisma.user.update({
@@ -56,11 +56,11 @@ export async function inviteMember(formData: FormData) {
 export async function removeMember(userId: string) {
   const session = await requireAuth();
   if (!session.user.householdId) {
-    return { error: "Household nao encontrado" };
+    return { error: "Household não encontrado" };
   }
 
   if (userId === session.user.id) {
-    return { error: "Voce nao pode remover a si mesmo" };
+    return { error: "Você não pode remover a si mesmo" };
   }
 
   const newHousehold = await prisma.household.create({

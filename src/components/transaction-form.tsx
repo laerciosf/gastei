@@ -63,7 +63,7 @@ export function TransactionForm({ open, onOpenChange, categories, transaction }:
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{isEditing ? "Editar" : "Nova"} Transacao</DialogTitle>
+          <DialogTitle>{isEditing ? "Editar" : "Nova"} Transação</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
@@ -90,7 +90,7 @@ export function TransactionForm({ open, onOpenChange, categories, transaction }:
             </Button>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="description">Descricao</Label>
+            <Label htmlFor="description">Descrição</Label>
             <Input id="description" name="description" defaultValue={transaction?.description} required />
           </div>
           <div className="space-y-2">

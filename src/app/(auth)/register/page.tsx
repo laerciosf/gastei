@@ -31,7 +31,7 @@ export default function RegisterPage() {
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-2xl">Criar conta no Gastei</CardTitle>
-          <CardDescription>Comece a controlar suas financas</CardDescription>
+          <CardDescription>Comece a controlar suas finanças</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -57,7 +57,7 @@ export default function RegisterPage() {
             </Button>
           </form>
           <p className="mt-4 text-center text-sm text-muted-foreground">
-            Ja tem conta?{" "}
+            Já tem conta?{" "}
             <Link href="/login" className="text-primary underline">
               Entrar
             </Link>

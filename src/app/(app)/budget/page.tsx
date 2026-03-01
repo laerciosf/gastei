@@ -11,7 +11,7 @@ export default async function BudgetPage() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Orcamento — {currentMonth}</h2>
+      <h2 className="text-2xl font-bold">Orçamento — {currentMonth}</h2>
       <BudgetList budgets={budgets} categories={categories} currentMonth={currentMonth} />
     </div>
   );

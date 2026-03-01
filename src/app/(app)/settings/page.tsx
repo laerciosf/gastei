@@ -6,7 +6,7 @@ export default async function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Configuracoes</h2>
+      <h2 className="text-2xl font-bold">Configurações</h2>
       <SettingsForm user={{ name: session.user.name ?? "", email: session.user.email ?? "" }} />
     </div>
   );

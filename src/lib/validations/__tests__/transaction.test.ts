@@ -4,7 +4,7 @@ import { transactionSchema } from "@/lib/validations/transaction";
 describe("transactionSchema", () => {
   it("accepts valid transaction", () => {
     const result = transactionSchema.safeParse({
-      description: "Almoco",
+      description: "Almoço",
       amount: "25.50",
       type: "EXPENSE",
       categoryId: "cat-123",
@@ -26,7 +26,7 @@ describe("transactionSchema", () => {
 
   it("rejects zero amount", () => {
     const result = transactionSchema.safeParse({
-      description: "Almoco",
+      description: "Almoço",
       amount: "0",
       type: "EXPENSE",
       categoryId: "cat-123",
@@ -37,7 +37,7 @@ describe("transactionSchema", () => {
 
   it("rejects negative amount", () => {
     const result = transactionSchema.safeParse({
-      description: "Almoco",
+      description: "Almoço",
       amount: "-10",
       type: "EXPENSE",
       categoryId: "cat-123",
@@ -48,7 +48,7 @@ describe("transactionSchema", () => {
 
   it("rejects missing category", () => {
     const result = transactionSchema.safeParse({
-      description: "Almoco",
+      description: "Almoço",
       amount: "25.50",
       type: "EXPENSE",
       categoryId: "",

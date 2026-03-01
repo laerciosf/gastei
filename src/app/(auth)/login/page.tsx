@@ -40,7 +40,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-2xl">Entrar no Gastei</CardTitle>
-          <CardDescription>Acesse sua conta para gerenciar suas financas</CardDescription>
+          <CardDescription>Acesse sua conta para gerenciar suas finanças</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -77,7 +77,7 @@ export default function LoginPage() {
             Entrar com Google
           </Button>
           <p className="mt-4 text-center text-sm text-muted-foreground">
-            Nao tem conta?{" "}
+            Não tem conta?{" "}
             <Link href="/register" className="text-primary underline">
               Cadastre-se
             </Link>

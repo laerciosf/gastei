@@ -45,7 +45,7 @@ export function TransactionsList({ transactions, categories }: TransactionsListP
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Tem certeza que deseja excluir esta transacao?")) return;
+    if (!confirm("Tem certeza que deseja excluir esta transação?")) return;
     await deleteTransaction(id);
   }
 
@@ -54,13 +54,13 @@ export function TransactionsList({ transactions, categories }: TransactionsListP
       <div className="flex items-center justify-between">
         <Button onClick={handleNew}>
           <Plus className="mr-2 h-4 w-4" />
-          Nova Transacao
+          Nova Transação
         </Button>
       </div>
 
       <div className="space-y-2">
         {transactions.length === 0 && (
-          <p className="py-8 text-center text-muted-foreground">Nenhuma transacao encontrada</p>
+          <p className="py-8 text-center text-muted-foreground">Nenhuma transação encontrada</p>
         )}
         {transactions.map((tx) => (
           <div key={tx.id} className="flex items-center justify-between rounded-md border p-4">

@@ -16,11 +16,11 @@ export function RecentTransactions({ transactions }: { transactions: Transaction
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Transacoes Recentes</CardTitle>
+        <CardTitle>Transações Recentes</CardTitle>
       </CardHeader>
       <CardContent>
         {transactions.length === 0 ? (
-          <p className="py-4 text-center text-muted-foreground">Nenhuma transacao ainda</p>
+          <p className="py-4 text-center text-muted-foreground">Nenhuma transação ainda</p>
         ) : (
           <div className="space-y-3">
             {transactions.map((tx) => (

@@ -4,7 +4,7 @@ import { categorySchema } from "@/lib/validations/category";
 describe("categorySchema", () => {
   it("accepts valid expense category", () => {
     const result = categorySchema.safeParse({
-      name: "Alimentacao",
+      name: "Alimentação",
       icon: "utensils",
       color: "#ef4444",
       type: "EXPENSE",
@@ -14,7 +14,7 @@ describe("categorySchema", () => {
 
   it("accepts valid income category", () => {
     const result = categorySchema.safeParse({
-      name: "Salario",
+      name: "Salário",
       icon: "banknote",
       color: "#10b981",
       type: "INCOME",

@@ -48,7 +48,7 @@ export function BudgetList({ budgets, categories, currentMonth }: BudgetListProp
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Remover este orcamento?")) return;
+    if (!confirm("Remover este orçamento?")) return;
     await deleteBudget(id);
   }
 
@@ -56,7 +56,7 @@ export function BudgetList({ budgets, categories, currentMonth }: BudgetListProp
     <>
       <Button onClick={() => setFormOpen(true)}>
         <Plus className="mr-2 h-4 w-4" />
-        Definir Orcamento
+        Definir Orçamento
       </Button>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -100,13 +100,13 @@ export function BudgetList({ budgets, categories, currentMonth }: BudgetListProp
       </div>
 
       {budgets.length === 0 && (
-        <p className="py-8 text-center text-muted-foreground">Nenhum orcamento definido para este mes</p>
+        <p className="py-8 text-center text-muted-foreground">Nenhum orçamento definido para este mês</p>
       )}
 
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Definir Orcamento</DialogTitle>
+            <DialogTitle>Definir Orçamento</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
