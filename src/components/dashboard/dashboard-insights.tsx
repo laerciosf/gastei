@@ -18,7 +18,7 @@ function InsightBadge({ insight }: { insight: Insight }) {
 
   if (type === "gone") {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2 py-0.5 text-xs font-medium text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">
+      <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
         <Ban className="h-3 w-3" />
         Zerou
       </span>
