@@ -1,19 +1,42 @@
 import { TrendingUp, TrendingDown, Sparkles, Plus, Ban } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatCurrency } from "@/lib/utils/money";
 import type { Insight } from "@/types";
 
-function DeltaBadge({ delta, transactionType }: { delta: number; transactionType: "INCOME" | "EXPENSE" }) {
-  const isPositiveChange = transactionType === "INCOME" ? delta > 0 : delta < 0;
+function InsightBadge({ insight }: { insight: Insight }) {
+  const { type, deltaMonth, transactionType } = insight;
+
+  if (type === "new") {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+        <Plus className="h-3 w-3" />
+        Novo
+      </span>
+    );
+  }
+
+  if (type === "gone") {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+        <Ban className="h-3 w-3" />
+        Zerou
+      </span>
+    );
+  }
+
+  const isPositiveChange = transactionType === "INCOME" ? deltaMonth > 0 : deltaMonth < 0;
 
   return (
     <span
       className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${
-        isPositiveChange ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" : "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400"
+        isPositiveChange
+          ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+          : "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400"
       }`}
     >
-      {delta > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-      {delta > 0 ? "+" : ""}{delta}%
+      {deltaMonth > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+      {deltaMonth > 0 ? "+" : ""}{deltaMonth}%
     </span>
   );
 }
@@ -31,8 +54,49 @@ function InsightIcon({ type }: { type: Insight["type"] }) {
   }
 }
 
+function InsightCard({ insight }: { insight: Insight }) {
+  const showPrevious = insight.type !== "new";
+  const showAverage = insight.averageAmount > 0;
+
+  const tooltipText = showAverage
+    ? `Média 3 meses: ${formatCurrency(insight.averageAmount)}`
+    : "Sem histórico suficiente para média";
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div className="flex items-center gap-3 rounded-lg border p-3 transition-colors hover:bg-muted/50">
+          <div
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
+            style={{ backgroundColor: `${insight.categoryColor}20`, color: insight.categoryColor }}
+          >
+            <InsightIcon type={insight.type} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium">{insight.categoryName}</p>
+            <p className="text-xs text-muted-foreground font-mono tabular-nums">
+              {showPrevious ? (
+                <>{formatCurrency(insight.previousAmount)} → {formatCurrency(insight.currentAmount)}</>
+              ) : (
+                formatCurrency(insight.currentAmount)
+              )}
+            </p>
+          </div>
+          <InsightBadge insight={insight} />
+        </div>
+      </TooltipTrigger>
+      <TooltipContent>
+        <p>{tooltipText}</p>
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
 export function DashboardInsights({ insights }: { insights: Insight[] }) {
   if (insights.length === 0) return null;
+
+  const expenses = insights.filter((i) => i.transactionType === "EXPENSE");
+  const income = insights.filter((i) => i.transactionType === "INCOME");
 
   return (
     <Card>
@@ -42,29 +106,27 @@ export function DashboardInsights({ insights }: { insights: Insight[] }) {
           Insights
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {insights.map((insight) => (
-            <div
-              key={`${insight.categoryId}-${insight.transactionType}`}
-              className="flex items-center gap-3 rounded-lg border p-3"
-            >
-              <div
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
-                style={{ backgroundColor: `${insight.categoryColor}20`, color: insight.categoryColor }}
-              >
-                <InsightIcon type={insight.type} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">{insight.categoryName}</p>
-                <p className="text-xs text-muted-foreground font-mono tabular-nums">
-                  {formatCurrency(insight.currentAmount)}
-                </p>
-              </div>
-              <DeltaBadge delta={insight.deltaMonth} transactionType={insight.transactionType} />
+      <CardContent className="space-y-4">
+        {expenses.length > 0 && (
+          <div>
+            <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">Despesas</p>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {expenses.map((insight) => (
+                <InsightCard key={`${insight.categoryId}-${insight.transactionType}`} insight={insight} />
+              ))}
             </div>
-          ))}
-        </div>
+          </div>
+        )}
+        {income.length > 0 && (
+          <div>
+            <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">Receitas</p>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {income.map((insight) => (
+                <InsightCard key={`${insight.categoryId}-${insight.transactionType}`} insight={insight} />
+              ))}
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
