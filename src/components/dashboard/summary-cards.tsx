@@ -36,7 +36,7 @@ export function SummaryCards({ totalIncome, totalExpense, balance }: SummaryCard
         </CardHeader>
         <CardContent>
           <p className={`text-2xl font-semibold font-mono tabular-nums ${balance >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-            {formatCurrency(Math.abs(balance))}
+            {balance < 0 ? "- " : ""}{formatCurrency(Math.abs(balance))}
           </p>
         </CardContent>
       </Card>

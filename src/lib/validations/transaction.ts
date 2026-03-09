@@ -8,7 +8,7 @@ export const transactionSchema = z.object({
   }, "Valor deve ser maior que zero"),
   type: z.enum(["INCOME", "EXPENSE"]),
   categoryId: z.string().min(1, "Categoria é obrigatória"),
-  date: z.string().min(1, "Data é obrigatória"),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida"),
 });
 
 export type TransactionInput = z.infer<typeof transactionSchema>;

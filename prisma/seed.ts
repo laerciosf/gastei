@@ -1,12 +1,13 @@
-import { PrismaClient, TransactionType } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 
 import "dotenv/config";
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
+// Re-declare DEFAULT_CATEGORIES here to avoid importing from src/
+// which would require tsconfig path aliases in the seed context.
+// This list must match src/lib/setup-household.ts DEFAULT_CATEGORIES.
+import { TransactionType } from "@prisma/client";
 
 const DEFAULT_CATEGORIES = [
   { name: "Alimentação", icon: "utensils", color: "#ef4444", type: TransactionType.EXPENSE },
@@ -23,11 +24,24 @@ const DEFAULT_CATEGORIES = [
   { name: "Outros (Receita)", icon: "plus-circle", color: "#6b7280", type: TransactionType.INCOME },
 ];
 
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
+
 async function main() {
   console.log("Seeding database...");
 
+  const user = await prisma.user.create({
+    data: { email: "seed@example.com", name: "Seed User" },
+  });
+
   const household = await prisma.household.create({
-    data: { name: "Minha Casa" },
+    data: { name: "Minha Casa", ownerId: user.id },
+  });
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { householdId: household.id },
   });
 
   for (const cat of DEFAULT_CATEGORIES) {

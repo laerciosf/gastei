@@ -18,10 +18,10 @@ describe("loginSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("rejects short password", () => {
+  it("rejects empty password", () => {
     const result = loginSchema.safeParse({
       email: "test@example.com",
-      password: "12345",
+      password: "",
     });
     expect(result.success).toBe(false);
   });
@@ -32,16 +32,43 @@ describe("registerSchema", () => {
     const result = registerSchema.safeParse({
       name: "John",
       email: "john@example.com",
-      password: "123456",
+      password: "SecurePass123",
     });
     expect(result.success).toBe(true);
+  });
+
+  it("rejects short password", () => {
+    const result = registerSchema.safeParse({
+      name: "John",
+      email: "john@example.com",
+      password: "Short1",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects password without uppercase", () => {
+    const result = registerSchema.safeParse({
+      name: "John",
+      email: "john@example.com",
+      password: "nouppercase123",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects password without number", () => {
+    const result = registerSchema.safeParse({
+      name: "John",
+      email: "john@example.com",
+      password: "NoNumberHere",
+    });
+    expect(result.success).toBe(false);
   });
 
   it("rejects short name", () => {
     const result = registerSchema.safeParse({
       name: "J",
       email: "john@example.com",
-      password: "123456",
+      password: "SecurePass123",
     });
     expect(result.success).toBe(false);
   });

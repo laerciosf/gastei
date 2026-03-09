@@ -4,12 +4,13 @@ import { ptBR } from "date-fns/locale";
 import { ArrowLeftRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils/money";
+import type { TransactionType } from "@/types";
 
 interface Transaction {
   id: string;
   description: string;
   amount: number;
-  type: string;
+  type: TransactionType;
   date: Date;
   category: { name: string; color: string };
 }

@@ -7,8 +7,24 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Gastei",
+  title: {
+    default: "Gastei",
+    template: "%s | Gastei",
+  },
   description: "Controle financeiro pessoal",
+  openGraph: {
+    title: "Gastei",
+    description: "Controle financeiro pessoal",
+    type: "website",
+    locale: "pt_BR",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+  icons: {
+    icon: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

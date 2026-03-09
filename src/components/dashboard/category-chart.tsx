@@ -5,11 +5,13 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils/money";
 
+import type { TransactionType } from "@/types";
+
 interface CategoryData {
   name: string;
   color: string;
   total: number;
-  type: string;
+  type: TransactionType;
 }
 
 export function CategoryChart({ data }: { data: CategoryData[] }) {
@@ -48,8 +50,8 @@ export function CategoryChart({ data }: { data: CategoryData[] }) {
               outerRadius={100}
               label={({ name, percent }) => `${name} (${((percent ?? 0) * 100).toFixed(0)}%)`}
             >
-              {expenses.map((entry, index) => (
-                <Cell key={index} fill={entry.color} />
+              {expenses.map((entry) => (
+                <Cell key={entry.name} fill={entry.color} />
               ))}
             </Pie>
             <Tooltip formatter={(value) => formatCurrency(Number(value))} />

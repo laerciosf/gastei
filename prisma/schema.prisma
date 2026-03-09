@@ -19,10 +19,14 @@ model User {
   householdId String?
   household   Household? @relation(fields: [householdId], references: [id])
 
-  transactions Transaction[]
-  accounts     Account[]
-  sessions     Session[]
+  transactions          Transaction[]
+  accounts              Account[]
+  sessions              Session[]
+  sentInvites           HouseholdInvite[] @relation("InviteSender")
+  receivedInvites       HouseholdInvite[] @relation("InviteReceiver")
+  recurringTransactions RecurringTransaction[]
 
+  @@index([householdId])
   @@map("users")
 }
 
@@ -70,13 +74,42 @@ model Household {
   id        String   @id @default(cuid())
   name      String
   createdAt DateTime @default(now())
+  ownerId   String
 
-  members      User[]
-  categories   Category[]
-  transactions Transaction[]
-  budgets      Budget[]
+  members               User[]
+  categories            Category[]
+  transactions          Transaction[]
+  budgets               Budget[]
+  invites               HouseholdInvite[]
+  recurringTransactions RecurringTransaction[]
 
   @@map("households")
+}
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+model HouseholdInvite {
+  id        String       @id @default(cuid())
+  status    InviteStatus @default(PENDING)
+  createdAt DateTime     @default(now())
+  expiresAt DateTime
+
+  householdId String
+  household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+
+  inviterId String
+  inviter   User @relation("InviteSender", fields: [inviterId], references: [id], onDelete: Cascade)
+
+  inviteeId String
+  invitee   User @relation("InviteReceiver", fields: [inviteeId], references: [id], onDelete: Cascade)
+
+  @@unique([householdId, inviteeId, status])
+  @@index([inviteeId, status])
+  @@map("household_invites")
 }
 
 enum TransactionType {
@@ -94,10 +127,12 @@ model Category {
   householdId String
   household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
 
-  transactions Transaction[]
-  budgets      Budget[]
+  transactions          Transaction[]
+  budgets               Budget[]
+  recurringTransactions RecurringTransaction[]
 
   @@unique([name, householdId])
+  @@index([householdId])
   @@map("categories")
 }
 
@@ -118,6 +153,8 @@ model Transaction {
   householdId String
   household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
 
+  recurringOccurrence RecurringOccurrence?
+
   @@index([householdId, date])
   @@index([householdId, categoryId])
   @@map("transactions")
@@ -136,4 +173,45 @@ model Budget {
 
   @@unique([month, categoryId, householdId])
   @@map("budgets")
+}
+
+model RecurringTransaction {
+  id         String          @id @default(cuid())
+  description String
+  amount     Int
+  type       TransactionType
+  dayOfMonth Int
+  startMonth String
+  endMonth   String?
+  active     Boolean         @default(true)
+  createdAt  DateTime        @default(now())
+
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  userId String
+  user   User @relation(fields: [userId], references: [id])
+
+  householdId String
+  household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+
+  occurrences RecurringOccurrence[]
+
+  @@index([householdId, active])
+  @@map("recurring_transactions")
+}
+
+model RecurringOccurrence {
+  id    String  @id @default(cuid())
+  month String
+  paid  Boolean @default(false)
+
+  transactionId String      @unique
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+
+  recurringTransactionId String
+  recurringTransaction   RecurringTransaction @relation(fields: [recurringTransactionId], references: [id], onDelete: Cascade)
+
+  @@unique([recurringTransactionId, month])
+  @@map("recurring_occurrences")
 }

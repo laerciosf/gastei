@@ -19,6 +19,10 @@ interface CurrencyInputProps
 function CurrencyInput({ name, defaultValueCents = 0, className, ...props }: CurrencyInputProps) {
   const [cents, setCents] = React.useState(defaultValueCents);
 
+  React.useEffect(() => {
+    setCents(defaultValueCents);
+  }, [defaultValueCents]);
+
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const digits = e.target.value.replace(/\D/g, "");
     setCents(Number(digits));

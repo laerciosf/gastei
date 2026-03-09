@@ -14,13 +14,18 @@ export async function updateProfile(formData: FormData) {
 
   const parsed = profileSchema.safeParse({ name: formData.get("name") });
   if (!parsed.success) {
-    return { error: parsed.error.issues[0].message };
+    return { error: parsed.error.issues[0]?.message ?? "Dados inválidos" };
   }
 
-  await prisma.user.update({
-    where: { id: session.user.id },
-    data: { name: parsed.data.name },
-  });
+  try {
+    await prisma.user.update({
+      where: { id: session.user.id },
+      data: { name: parsed.data.name },
+    });
+  } catch (error) {
+    console.error("Failed to update profile:", error);
+    return { error: "Erro ao atualizar perfil. Tente novamente." };
+  }
 
   revalidatePath("/settings");
   return { success: true };

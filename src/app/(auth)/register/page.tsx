@@ -22,8 +22,8 @@ export default function RegisterPage() {
 
     if (result?.error) {
       setError(result.error);
-      setLoading(false);
     }
+    setLoading(false);
   }
 
   return (
@@ -50,7 +50,7 @@ export default function RegisterPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Senha</Label>
-              <Input id="password" name="password" type="password" required minLength={6} />
+              <Input id="password" name="password" type="password" required minLength={12} />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Criando conta..." : "Criar conta"}

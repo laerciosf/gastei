@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CurrencyInput } from "@/components/ui/currency-input";
@@ -8,19 +8,17 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { createTransaction, updateTransaction } from "@/lib/actions/transactions";
+import { validateTransactionFormData } from "@/lib/validations/shared";
 import { toast } from "sonner";
+import type { TransactionType, Category } from "@/types";
 
-interface Category {
-  id: string;
-  name: string;
-  type: string;
-}
+type TransactionFormCategory = Pick<Category, "id" | "name" | "type">;
 
 interface TransactionData {
   id: string;
   description: string;
   amount: number;
-  type: string;
+  type: TransactionType;
   categoryId: string;
   date: string;
 }
@@ -28,23 +26,47 @@ interface TransactionData {
 interface TransactionFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  categories: Category[];
+  categories: TransactionFormCategory[];
   transaction?: TransactionData | null;
 }
 
 export function TransactionForm({ open, onOpenChange, categories, transaction }: TransactionFormProps) {
   const [loading, setLoading] = useState(false);
   const [type, setType] = useState(transaction?.type ?? "EXPENSE");
+  const [categoryId, setCategoryId] = useState(transaction?.categoryId ?? "");
   const isEditing = !!transaction;
+
+  useEffect(() => {
+    if (open) {
+      setType(transaction?.type ?? "EXPENSE");
+      setCategoryId(transaction?.categoryId ?? "");
+    }
+  }, [open, transaction?.type, transaction?.categoryId]);
 
   const filteredCategories = categories.filter((c) => c.type === type);
 
+  function handleTypeChange(newType: TransactionType) {
+    setType(newType);
+    // Clear category if it doesn't belong to the new type
+    const currentCat = categories.find((c) => c.id === categoryId);
+    if (currentCat && currentCat.type !== newType) {
+      setCategoryId("");
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setLoading(true);
 
     const formData = new FormData(e.currentTarget);
     formData.set("type", type);
+
+    const validationError = validateTransactionFormData(formData);
+    if (validationError) {
+      toast.error(validationError);
+      return;
+    }
+
+    setLoading(true);
 
     const result = isEditing
       ? await updateTransaction(transaction!.id, formData)
@@ -72,7 +94,7 @@ export function TransactionForm({ open, onOpenChange, categories, transaction }:
               type="button"
               variant={type === "EXPENSE" ? "default" : "outline"}
               className="flex-1"
-              onClick={() => setType("EXPENSE")}
+              onClick={() => handleTypeChange("EXPENSE")}
             >
               Despesa
             </Button>
@@ -80,7 +102,7 @@ export function TransactionForm({ open, onOpenChange, categories, transaction }:
               type="button"
               variant={type === "INCOME" ? "default" : "outline"}
               className="flex-1"
-              onClick={() => setType("INCOME")}
+              onClick={() => handleTypeChange("INCOME")}
             >
               Receita
             </Button>
@@ -99,7 +121,7 @@ export function TransactionForm({ open, onOpenChange, categories, transaction }:
           </div>
           <div className="space-y-2">
             <Label htmlFor="categoryId">Categoria</Label>
-            <Select name="categoryId" defaultValue={transaction?.categoryId}>
+            <Select name="categoryId" value={categoryId} onValueChange={setCategoryId}>
               <SelectTrigger>
                 <SelectValue placeholder="Selecione uma categoria" />
               </SelectTrigger>

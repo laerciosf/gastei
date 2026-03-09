@@ -3,40 +3,41 @@
 import { useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Trash2, Pencil, Plus, ArrowLeftRight } from "lucide-react";
+import { Trash2, Pencil, Plus, ArrowLeftRight, Repeat } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { TransactionForm } from "@/components/transaction-form";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { TransactionPagination } from "@/components/transaction-pagination";
 import { deleteTransaction } from "@/lib/actions/transactions";
+import { useDeleteAction } from "@/hooks/use-delete-action";
 import { formatCurrency } from "@/lib/utils/money";
-import { toast } from "sonner";
+import type { TransactionType } from "@/types";
 
 interface Transaction {
   id: string;
   description: string;
   amount: number;
-  type: string;
+  type: TransactionType;
   date: Date;
-  category: { id: string; name: string; color: string; type: string };
+  category: { id: string; name: string; color: string; type: TransactionType };
   user: { name: string | null };
-}
-
-interface Category {
-  id: string;
-  name: string;
-  type: string;
+  recurringOccurrence?: { id: string } | null;
 }
 
 interface TransactionsListProps {
   transactions: Transaction[];
-  categories: Category[];
+  categories: Pick<import("@/types").Category, "id" | "name" | "type">[];
+  page: number;
+  totalPages: number;
+  totalIncome: number;
+  totalExpense: number;
 }
 
-export function TransactionsList({ transactions, categories }: TransactionsListProps) {
+export function TransactionsList({ transactions, categories, page, totalPages, totalIncome, totalExpense }: TransactionsListProps) {
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Transaction | null>(null);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [deleting, setDeleting] = useState(false);
+  const { deleteId, setDeleteId, deleting, handleDelete } = useDeleteAction(deleteTransaction);
 
   function handleEdit(tx: Transaction) {
     setEditing(tx);
@@ -48,19 +49,6 @@ export function TransactionsList({ transactions, categories }: TransactionsListP
     setFormOpen(true);
   }
 
-  async function handleDelete() {
-    if (!deleteId) return;
-    setDeleting(true);
-    const result = await deleteTransaction(deleteId);
-    if (result.error) {
-      toast.error(result.error);
-    } else {
-      toast.success("Transação excluída");
-    }
-    setDeleting(false);
-    setDeleteId(null);
-  }
-
   return (
     <>
       <div className="flex items-center justify-between">
@@ -69,6 +57,16 @@ export function TransactionsList({ transactions, categories }: TransactionsListP
           Nova Transação
         </Button>
       </div>
+
+      {(totalIncome > 0 || totalExpense > 0) && (
+        <div className="flex gap-4 text-sm">
+          <span className="text-emerald-600 font-mono tabular-nums">+ {formatCurrency(totalIncome)}</span>
+          <span className="text-rose-600 font-mono tabular-nums">- {formatCurrency(totalExpense)}</span>
+          <span className={`font-semibold font-mono tabular-nums ${totalIncome - totalExpense >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+            = {formatCurrency(Math.abs(totalIncome - totalExpense))}
+          </span>
+        </div>
+      )}
 
       <div className="space-y-2">
         {transactions.length === 0 && (
@@ -86,7 +84,15 @@ export function TransactionsList({ transactions, categories }: TransactionsListP
             <div className="flex items-center gap-3">
               <div className="h-3 w-3 rounded-full" style={{ backgroundColor: tx.category.color }} />
               <div>
-                <p className="font-medium">{tx.description}</p>
+                <div className="flex items-center gap-2">
+                  <p className="font-medium">{tx.description}</p>
+                  {tx.recurringOccurrence && (
+                    <Badge variant="secondary" className="gap-1 text-[10px] px-1.5 py-0">
+                      <Repeat className="h-3 w-3" />
+                      Recorrente
+                    </Badge>
+                  )}
+                </div>
                 <p className="text-sm text-muted-foreground">
                   {tx.category.name} · {format(new Date(tx.date), "dd MMM yyyy", { locale: ptBR })}
                   {tx.user.name && ` · ${tx.user.name}`}
@@ -134,6 +140,8 @@ export function TransactionsList({ transactions, categories }: TransactionsListP
         onConfirm={handleDelete}
         loading={deleting}
       />
+
+      {totalPages > 1 && <TransactionPagination page={page} totalPages={totalPages} />}
     </>
   );
 }

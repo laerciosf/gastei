@@ -7,5 +7,6 @@ export function formatCurrency(cents: number): string {
 
 export function parseCurrency(value: string): number {
   const num = parseFloat(value);
+  if (isNaN(num)) return 0;
   return Math.round(num * 100);
 }

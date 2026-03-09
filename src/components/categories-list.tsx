@@ -7,21 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { CategoryForm } from "@/components/category-form";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { deleteCategory } from "@/lib/actions/categories";
-import { toast } from "sonner";
-
-interface Category {
-  id: string;
-  name: string;
-  icon: string;
-  color: string;
-  type: string;
-}
+import { useDeleteAction } from "@/hooks/use-delete-action";
+import type { Category } from "@/types";
 
 export function CategoriesList({ categories }: { categories: Category[] }) {
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Category | null>(null);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [deleting, setDeleting] = useState(false);
+  const { deleteId, setDeleteId, deleting, handleDelete } = useDeleteAction(deleteCategory);
 
   const expenseCategories = categories.filter((c) => c.type === "EXPENSE");
   const incomeCategories = categories.filter((c) => c.type === "INCOME");
@@ -34,19 +26,6 @@ export function CategoriesList({ categories }: { categories: Category[] }) {
   function handleNew() {
     setEditing(null);
     setFormOpen(true);
-  }
-
-  async function handleDelete() {
-    if (!deleteId) return;
-    setDeleting(true);
-    const result = await deleteCategory(deleteId);
-    if (result.error) {
-      toast.error(result.error);
-    } else {
-      toast.success("Categoria excluída");
-    }
-    setDeleting(false);
-    setDeleteId(null);
   }
 
   function renderCategory(category: Category) {
@@ -80,12 +59,18 @@ export function CategoriesList({ categories }: { categories: Category[] }) {
           <h3 className="text-lg font-semibold">
             Despesas <Badge variant="secondary">{expenseCategories.length}</Badge>
           </h3>
+          {expenseCategories.length === 0 && (
+            <p className="text-sm text-muted-foreground py-4">Nenhuma categoria de despesa</p>
+          )}
           {expenseCategories.map(renderCategory)}
         </div>
         <div className="space-y-3">
           <h3 className="text-lg font-semibold">
             Receitas <Badge variant="secondary">{incomeCategories.length}</Badge>
           </h3>
+          {incomeCategories.length === 0 && (
+            <p className="text-sm text-muted-foreground py-4">Nenhuma categoria de receita</p>
+          )}
           {incomeCategories.map(renderCategory)}
         </div>
       </div>

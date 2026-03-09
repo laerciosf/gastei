@@ -29,15 +29,20 @@ export async function createCategory(formData: FormData) {
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0].message };
+    return { error: parsed.error.issues[0]?.message ?? "Dados inválidos" };
   }
 
-  await prisma.category.create({
-    data: {
-      ...parsed.data,
-      householdId: session.user.householdId,
-    },
-  });
+  try {
+    await prisma.category.create({
+      data: {
+        ...parsed.data,
+        householdId: session.user.householdId,
+      },
+    });
+  } catch (error) {
+    console.error("Failed to create category:", error);
+    return { error: "Erro ao criar categoria. Verifique se o nome já existe." };
+  }
 
   revalidatePath("/categories");
   return { success: true };
@@ -57,13 +62,18 @@ export async function updateCategory(id: string, formData: FormData) {
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0].message };
+    return { error: parsed.error.issues[0]?.message ?? "Dados inválidos" };
   }
 
-  await prisma.category.update({
-    where: { id, householdId: session.user.householdId },
-    data: parsed.data,
-  });
+  try {
+    await prisma.category.update({
+      where: { id, householdId: session.user.householdId },
+      data: parsed.data,
+    });
+  } catch (error) {
+    console.error("Failed to update category:", error);
+    return { error: "Erro ao atualizar categoria. Tente novamente." };
+  }
 
   revalidatePath("/categories");
   return { success: true };
@@ -76,16 +86,21 @@ export async function deleteCategory(id: string) {
   }
 
   const hasTransactions = await prisma.transaction.count({
-    where: { categoryId: id },
+    where: { categoryId: id, householdId: session.user.householdId },
   });
 
   if (hasTransactions > 0) {
     return { error: "Categoria possui transações vinculadas" };
   }
 
-  await prisma.category.delete({
-    where: { id, householdId: session.user.householdId },
-  });
+  try {
+    await prisma.category.delete({
+      where: { id, householdId: session.user.householdId },
+    });
+  } catch (error) {
+    console.error("Failed to delete category:", error);
+    return { error: "Erro ao excluir categoria. Tente novamente." };
+  }
 
   revalidatePath("/categories");
   return { success: true };

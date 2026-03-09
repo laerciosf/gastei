@@ -11,34 +11,42 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { formatCurrency } from "@/lib/utils/money";
 import { upsertBudget, deleteBudget, type BudgetWithSpent } from "@/lib/actions/budget";
+import { useDeleteAction } from "@/hooks/use-delete-action";
 import { toast } from "sonner";
-
-interface Category {
-  id: string;
-  name: string;
-  type: string;
-}
+import type { Category } from "@/types";
 
 interface BudgetListProps {
   budgets: BudgetWithSpent[];
-  categories: Category[];
+  categories: Pick<Category, "id" | "name" | "type">[];
   currentMonth: string;
 }
 
 export function BudgetList({ budgets, categories, currentMonth }: BudgetListProps) {
   const [formOpen, setFormOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [deleting, setDeleting] = useState(false);
+  const { deleteId, setDeleteId, deleting, handleDelete } = useDeleteAction(deleteBudget);
 
   const expenseCategories = categories.filter((c) => c.type === "EXPENSE");
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setLoading(true);
 
     const formData = new FormData(e.currentTarget);
     formData.set("month", currentMonth);
+
+    const categoryId = formData.get("categoryId") as string;
+    if (!categoryId) {
+      toast.error("Selecione uma categoria");
+      return;
+    }
+
+    const amount = formData.get("amount") as string;
+    if (!amount || parseFloat(amount) <= 0) {
+      toast.error("Valor deve ser maior que zero");
+      return;
+    }
+
+    setLoading(true);
 
     const result = await upsertBudget(formData);
     if (result.error) {
@@ -48,19 +56,6 @@ export function BudgetList({ budgets, categories, currentMonth }: BudgetListProp
       setFormOpen(false);
     }
     setLoading(false);
-  }
-
-  async function handleDelete() {
-    if (!deleteId) return;
-    setDeleting(true);
-    const result = await deleteBudget(deleteId);
-    if (result.error) {
-      toast.error(result.error);
-    } else {
-      toast.success("Orçamento removido");
-    }
-    setDeleting(false);
-    setDeleteId(null);
   }
 
   return (

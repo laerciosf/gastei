@@ -2,14 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, ArrowLeftRight, Tag, Target, Repeat, Users, Settings, LogOut, Sparkles } from "lucide-react";
+import { LayoutDashboard, ArrowLeftRight, Tag, Target, Repeat, Users, Settings, LogOut } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 export const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/insights", label: "Insights", icon: Sparkles },
   { href: "/transactions", label: "Transações", icon: ArrowLeftRight },
   { href: "/categories", label: "Categorias", icon: Tag },
   { href: "/budget", label: "Orçamento", icon: Target },

@@ -5,17 +5,40 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth-guard";
 import { transactionSchema } from "@/lib/validations/transaction";
 import { parseCurrency } from "@/lib/utils/money";
+import type { Transaction, Category, TransactionType } from "@prisma/client";
 
 interface GetTransactionsParams {
   month?: string;
   categoryId?: string;
   type?: "INCOME" | "EXPENSE";
   search?: string;
+  page?: number;
+  pageSize?: number;
 }
 
-export async function getTransactions(params: GetTransactionsParams = {}) {
+type TransactionWithRelations = Transaction & {
+  category: Category;
+  user: { name: string | null };
+  recurringOccurrence: { id: string } | null;
+};
+
+export interface PaginatedTransactions {
+  transactions: TransactionWithRelations[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  totalIncome: number;
+  totalExpense: number;
+}
+
+export async function getTransactions(params: GetTransactionsParams = {}): Promise<PaginatedTransactions> {
   const session = await requireAuth();
-  if (!session.user.householdId) return [];
+  const empty = { transactions: [], total: 0, page: 1, pageSize: 50, totalPages: 0, totalIncome: 0, totalExpense: 0 };
+  if (!session.user.householdId) return empty;
+
+  const page = Math.min(10000, Math.max(1, params.page ?? 1));
+  const pageSize = Math.min(100, Math.max(1, params.pageSize ?? 50));
 
   const where: Record<string, unknown> = {
     householdId: session.user.householdId,
@@ -41,11 +64,31 @@ export async function getTransactions(params: GetTransactionsParams = {}) {
     where.description = { contains: params.search, mode: "insensitive" };
   }
 
-  return prisma.transaction.findMany({
-    where,
-    include: { category: true, user: { select: { name: true } } },
-    orderBy: { date: "desc" },
-  });
+  const [transactions, total, totals] = await Promise.all([
+    prisma.transaction.findMany({
+      where,
+      include: { category: true, user: { select: { name: true } }, recurringOccurrence: { select: { id: true } } },
+      orderBy: { date: "desc" },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.transaction.count({ where }),
+    prisma.transaction.groupBy({
+      by: ["type"],
+      where,
+      _sum: { amount: true },
+    }),
+  ]);
+
+  return {
+    transactions,
+    total,
+    page,
+    pageSize,
+    totalPages: Math.ceil(total / pageSize),
+    totalIncome: totals.find((t) => t.type === "INCOME")?._sum.amount ?? 0,
+    totalExpense: totals.find((t) => t.type === "EXPENSE")?._sum.amount ?? 0,
+  };
 }
 
 export async function createTransaction(formData: FormData) {
@@ -63,20 +106,32 @@ export async function createTransaction(formData: FormData) {
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0].message };
+    return { error: parsed.error.issues[0]?.message ?? "Dados inválidos" };
   }
 
-  await prisma.transaction.create({
-    data: {
-      description: parsed.data.description,
-      amount: parseCurrency(parsed.data.amount),
-      type: parsed.data.type,
-      date: new Date(parsed.data.date),
-      categoryId: parsed.data.categoryId,
-      userId: session.user.id,
-      householdId: session.user.householdId,
-    },
+  const category = await prisma.category.findFirst({
+    where: { id: parsed.data.categoryId, householdId: session.user.householdId },
   });
+  if (!category) {
+    return { error: "Categoria não encontrada" };
+  }
+
+  try {
+    await prisma.transaction.create({
+      data: {
+        description: parsed.data.description,
+        amount: parseCurrency(parsed.data.amount),
+        type: parsed.data.type,
+        date: new Date(parsed.data.date + "T00:00:00Z"),
+        categoryId: parsed.data.categoryId,
+        userId: session.user.id,
+        householdId: session.user.householdId,
+      },
+    });
+  } catch (error) {
+    console.error("Failed to create transaction:", error);
+    return { error: "Erro ao criar transação. Tente novamente." };
+  }
 
   revalidatePath("/transactions");
   revalidatePath("/dashboard");
@@ -98,19 +153,39 @@ export async function updateTransaction(id: string, formData: FormData) {
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0].message };
+    return { error: parsed.error.issues[0]?.message ?? "Dados inválidos" };
   }
 
-  await prisma.transaction.update({
+  const existing = await prisma.transaction.findFirst({
     where: { id, householdId: session.user.householdId },
-    data: {
-      description: parsed.data.description,
-      amount: parseCurrency(parsed.data.amount),
-      type: parsed.data.type,
-      date: new Date(parsed.data.date),
-      categoryId: parsed.data.categoryId,
-    },
   });
+
+  if (!existing) {
+    return { error: "Transação não encontrada" };
+  }
+
+  const category = await prisma.category.findFirst({
+    where: { id: parsed.data.categoryId, householdId: session.user.householdId },
+  });
+  if (!category) {
+    return { error: "Categoria não encontrada" };
+  }
+
+  try {
+    await prisma.transaction.update({
+      where: { id },
+      data: {
+        description: parsed.data.description,
+        amount: parseCurrency(parsed.data.amount),
+        type: parsed.data.type,
+        date: new Date(parsed.data.date + "T00:00:00Z"),
+        categoryId: parsed.data.categoryId,
+      },
+    });
+  } catch (error) {
+    console.error("Failed to update transaction:", error);
+    return { error: "Erro ao atualizar transação. Tente novamente." };
+  }
 
   revalidatePath("/transactions");
   revalidatePath("/dashboard");
@@ -123,9 +198,22 @@ export async function deleteTransaction(id: string) {
     return { error: "Grupo não encontrado" };
   }
 
-  await prisma.transaction.delete({
+  const existing = await prisma.transaction.findFirst({
     where: { id, householdId: session.user.householdId },
   });
+
+  if (!existing) {
+    return { error: "Transação não encontrada" };
+  }
+
+  try {
+    await prisma.transaction.delete({
+      where: { id },
+    });
+  } catch (error) {
+    console.error("Failed to delete transaction:", error);
+    return { error: "Erro ao excluir transação. Tente novamente." };
+  }
 
   revalidatePath("/transactions");
   revalidatePath("/dashboard");

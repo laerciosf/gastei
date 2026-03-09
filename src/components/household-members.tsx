@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { UserPlus, UserMinus } from "lucide-react";
+import { UserPlus, UserMinus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/confirm-dialog";
-import { inviteMember, removeMember } from "@/lib/actions/household";
+import { inviteMember, removeMember, cancelInvite } from "@/lib/actions/household";
 import { toast } from "sonner";
 
 interface Member {
@@ -25,11 +25,23 @@ interface Household {
   members: Member[];
 }
 
-export function HouseholdMembers({ household, currentUserId }: { household: Household; currentUserId: string }) {
+interface SentInvite {
+  id: string;
+  invitee: { id: string; name: string | null; email: string };
+}
+
+interface Props {
+  household: Household;
+  currentUserId: string;
+  sentInvites: SentInvite[];
+}
+
+export function HouseholdMembers({ household, currentUserId, sentInvites }: Props) {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [removingMember, setRemovingMember] = useState<{ id: string; name: string | null } | null>(null);
   const [removing, setRemoving] = useState(false);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
 
   async function handleInvite(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -41,7 +53,7 @@ export function HouseholdMembers({ household, currentUserId }: { household: Hous
     if (result.error) {
       toast.error(result.error);
     } else {
-      toast.success("Membro convidado");
+      toast.success("Convite enviado");
       setInviteOpen(false);
     }
     setLoading(false);
@@ -58,6 +70,17 @@ export function HouseholdMembers({ household, currentUserId }: { household: Hous
     }
     setRemoving(false);
     setRemovingMember(null);
+  }
+
+  async function handleCancelInvite(inviteId: string) {
+    setCancellingId(inviteId);
+    const result = await cancelInvite(inviteId);
+    if (result.error) {
+      toast.error(result.error);
+    } else {
+      toast.success("Convite cancelado");
+    }
+    setCancellingId(null);
   }
 
   return (
@@ -87,6 +110,40 @@ export function HouseholdMembers({ household, currentUserId }: { household: Hous
               )}
             </div>
           ))}
+
+          {sentInvites.length > 0 && (
+            <div className="border-t pt-4 mt-4 space-y-3">
+              <p className="text-sm font-medium text-muted-foreground">Convites Enviados</p>
+              {sentInvites.map((invite) => (
+                <div key={invite.id} className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-10 w-10">
+                      <AvatarFallback>
+                        {invite.invitee.name?.split(" ").map((n) => n[0]).join("").toUpperCase() ?? "?"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-medium text-muted-foreground">
+                        {invite.invitee.name ?? "Sem nome"}
+                        <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 px-2 py-0.5 rounded-full">
+                          Pendente
+                        </span>
+                      </p>
+                      <p className="text-sm text-muted-foreground">{invite.invitee.email}</p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    disabled={cancellingId === invite.id}
+                    onClick={() => handleCancelInvite(invite.id)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { TrendingUp, TrendingDown, Sparkles, Plus, Ban } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils/money";
@@ -37,14 +36,11 @@ export function DashboardInsights({ insights }: { insights: Insight[] }) {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Sparkles className="h-4 w-4" />
           Insights
         </CardTitle>
-        <Link href="/insights" className="text-sm text-primary hover:underline">
-          Ver todos
-        </Link>
       </CardHeader>
       <CardContent>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">

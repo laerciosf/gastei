@@ -44,7 +44,7 @@ export function CategoryForm({ open, onOpenChange, category }: CategoryFormProps
         <DialogHeader>
           <DialogTitle>{isEditing ? "Editar" : "Nova"} Categoria</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form key={category?.id ?? "new"} onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="name">Nome</Label>
             <Input id="name" name="name" defaultValue={category?.name} required />

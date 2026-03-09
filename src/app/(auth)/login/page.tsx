@@ -19,19 +19,24 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
 
-    const formData = new FormData(e.currentTarget);
+    try {
+      const formData = new FormData(e.currentTarget);
 
-    const result = await signIn("credentials", {
-      email: formData.get("email"),
-      password: formData.get("password"),
-      redirect: false,
-    });
+      const result = await signIn("credentials", {
+        email: formData.get("email"),
+        password: formData.get("password"),
+        redirect: false,
+      });
 
-    if (result?.error) {
-      setError("Email ou senha incorretos");
+      if (result?.error) {
+        setError("Email ou senha incorretos");
+        setLoading(false);
+      } else {
+        router.push("/dashboard");
+      }
+    } catch {
+      setError("Erro ao fazer login");
       setLoading(false);
-    } else {
-      router.push("/dashboard");
     }
   }
 

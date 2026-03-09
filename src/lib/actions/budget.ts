@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth-guard";
 import { budgetSchema } from "@/lib/validations/budget";
 import { parseCurrency } from "@/lib/utils/money";
+import { safeMonth } from "@/lib/utils/date";
 
 export interface BudgetWithSpent {
   id: string;
@@ -18,7 +19,7 @@ export async function getBudgets(month?: string): Promise<BudgetWithSpent[]> {
   const session = await requireAuth();
   if (!session.user.householdId) return [];
 
-  const targetMonth = month ?? new Date().toISOString().slice(0, 7);
+  const targetMonth = safeMonth(month);
   const [year, mon] = targetMonth.split("-").map(Number);
   const startDate = new Date(Date.UTC(year, mon - 1, 1));
   const endDate = new Date(Date.UTC(year, mon, 1));
@@ -62,25 +63,37 @@ export async function upsertBudget(formData: FormData) {
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0].message };
+    return { error: parsed.error.issues[0]?.message ?? "Dados inválidos" };
   }
 
-  await prisma.budget.upsert({
-    where: {
-      month_categoryId_householdId: {
+  const category = await prisma.category.findFirst({
+    where: { id: parsed.data.categoryId, householdId: session.user.householdId },
+  });
+  if (!category) {
+    return { error: "Categoria não encontrada" };
+  }
+
+  try {
+    await prisma.budget.upsert({
+      where: {
+        month_categoryId_householdId: {
+          month: parsed.data.month,
+          categoryId: parsed.data.categoryId,
+          householdId: session.user.householdId,
+        },
+      },
+      update: { amount: parseCurrency(parsed.data.amount) },
+      create: {
         month: parsed.data.month,
+        amount: parseCurrency(parsed.data.amount),
         categoryId: parsed.data.categoryId,
         householdId: session.user.householdId,
       },
-    },
-    update: { amount: parseCurrency(parsed.data.amount) },
-    create: {
-      month: parsed.data.month,
-      amount: parseCurrency(parsed.data.amount),
-      categoryId: parsed.data.categoryId,
-      householdId: session.user.householdId,
-    },
-  });
+    });
+  } catch (error) {
+    console.error("Failed to upsert budget:", error);
+    return { error: "Erro ao salvar orçamento. Tente novamente." };
+  }
 
   revalidatePath("/budget");
   return { success: true };
@@ -92,9 +105,14 @@ export async function deleteBudget(id: string) {
     return { error: "Grupo não encontrado" };
   }
 
-  await prisma.budget.delete({
-    where: { id, householdId: session.user.householdId },
-  });
+  try {
+    await prisma.budget.delete({
+      where: { id, householdId: session.user.householdId },
+    });
+  } catch (error) {
+    console.error("Failed to delete budget:", error);
+    return { error: "Erro ao excluir orçamento. Tente novamente." };
+  }
 
   revalidatePath("/budget");
   return { success: true };
