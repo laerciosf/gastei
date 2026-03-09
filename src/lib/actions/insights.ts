@@ -109,7 +109,7 @@ export async function getInsights(month?: string): Promise<Insight[]> {
       deltaMonth = -100;
     } else if (previous > 0) {
       deltaMonth = Math.round(((current - previous) / previous) * 100);
-      insightType = deltaMonth > 0 ? "increase" : "decrease";
+      insightType = deltaMonth >= 0 ? "increase" : "decrease";
     } else {
       continue;
     }
