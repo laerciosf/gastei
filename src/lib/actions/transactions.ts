@@ -10,6 +10,7 @@ import type { Transaction, Category, TransactionType } from "@prisma/client";
 interface GetTransactionsParams {
   month?: string;
   categoryId?: string;
+  tagId?: string;
   type?: "INCOME" | "EXPENSE";
   search?: string;
   page?: number;
@@ -20,6 +21,7 @@ type TransactionWithRelations = Transaction & {
   category: Category;
   user: { name: string | null };
   recurringOccurrence: { id: string } | null;
+  tags: { tag: { id: string; name: string; color: string } }[];
 };
 
 export interface PaginatedTransactions {
@@ -64,10 +66,19 @@ export async function getTransactions(params: GetTransactionsParams = {}): Promi
     where.description = { contains: params.search, mode: "insensitive" };
   }
 
+  if (params.tagId) {
+    where.tags = { some: { tagId: params.tagId } };
+  }
+
   const [transactions, total, totals] = await Promise.all([
     prisma.transaction.findMany({
       where,
-      include: { category: true, user: { select: { name: true } }, recurringOccurrence: { select: { id: true } } },
+      include: {
+        category: true,
+        user: { select: { name: true } },
+        recurringOccurrence: { select: { id: true } },
+        tags: { include: { tag: { select: { id: true, name: true, color: true } } } },
+      },
       orderBy: { date: "desc" },
       skip: (page - 1) * pageSize,
       take: pageSize,
@@ -97,12 +108,21 @@ export async function createTransaction(formData: FormData) {
     return { error: "Grupo não encontrado" };
   }
 
+  let tagIds: string[] = [];
+  try {
+    const rawTagIds = formData.get("tagIds");
+    if (rawTagIds) tagIds = JSON.parse(rawTagIds as string);
+  } catch {
+    // ignore malformed tagIds — Zod will catch invalid values
+  }
+
   const parsed = transactionSchema.safeParse({
     description: formData.get("description"),
     amount: formData.get("amount"),
     type: formData.get("type"),
     categoryId: formData.get("categoryId"),
     date: formData.get("date"),
+    tagIds,
   });
 
   if (!parsed.success) {
@@ -116,17 +136,37 @@ export async function createTransaction(formData: FormData) {
     return { error: "Categoria não encontrada" };
   }
 
+  if (parsed.data.tagIds && parsed.data.tagIds.length > 0) {
+    const validTags = await prisma.tag.count({
+      where: { id: { in: parsed.data.tagIds }, householdId: session.user.householdId },
+    });
+    if (validTags !== parsed.data.tagIds.length) {
+      return { error: "Tag não encontrada" };
+    }
+  }
+
   try {
-    await prisma.transaction.create({
-      data: {
-        description: parsed.data.description,
-        amount: parseCurrency(parsed.data.amount),
-        type: parsed.data.type,
-        date: new Date(parsed.data.date + "T00:00:00Z"),
-        categoryId: parsed.data.categoryId,
-        userId: session.user.id,
-        householdId: session.user.householdId,
-      },
+    await prisma.$transaction(async (tx) => {
+      const transaction = await tx.transaction.create({
+        data: {
+          description: parsed.data.description,
+          amount: parseCurrency(parsed.data.amount),
+          type: parsed.data.type,
+          date: new Date(parsed.data.date + "T00:00:00Z"),
+          categoryId: parsed.data.categoryId,
+          userId: session.user.id,
+          householdId: session.user.householdId,
+        },
+      });
+
+      if (parsed.data.tagIds && parsed.data.tagIds.length > 0) {
+        await tx.transactionTag.createMany({
+          data: parsed.data.tagIds.map((tagId) => ({
+            transactionId: transaction.id,
+            tagId,
+          })),
+        });
+      }
     });
   } catch (error) {
     console.error("Failed to create transaction:", error);
@@ -144,12 +184,21 @@ export async function updateTransaction(id: string, formData: FormData) {
     return { error: "Grupo não encontrado" };
   }
 
+  let tagIds: string[] = [];
+  try {
+    const rawTagIds = formData.get("tagIds");
+    if (rawTagIds) tagIds = JSON.parse(rawTagIds as string);
+  } catch {
+    // ignore malformed tagIds — Zod will catch invalid values
+  }
+
   const parsed = transactionSchema.safeParse({
     description: formData.get("description"),
     amount: formData.get("amount"),
     type: formData.get("type"),
     categoryId: formData.get("categoryId"),
     date: formData.get("date"),
+    tagIds,
   });
 
   if (!parsed.success) {
@@ -171,16 +220,38 @@ export async function updateTransaction(id: string, formData: FormData) {
     return { error: "Categoria não encontrada" };
   }
 
+  if (parsed.data.tagIds && parsed.data.tagIds.length > 0) {
+    const validTags = await prisma.tag.count({
+      where: { id: { in: parsed.data.tagIds }, householdId: session.user.householdId },
+    });
+    if (validTags !== parsed.data.tagIds.length) {
+      return { error: "Tag não encontrada" };
+    }
+  }
+
   try {
-    await prisma.transaction.update({
-      where: { id },
-      data: {
-        description: parsed.data.description,
-        amount: parseCurrency(parsed.data.amount),
-        type: parsed.data.type,
-        date: new Date(parsed.data.date + "T00:00:00Z"),
-        categoryId: parsed.data.categoryId,
-      },
+    await prisma.$transaction(async (tx) => {
+      await tx.transaction.update({
+        where: { id },
+        data: {
+          description: parsed.data.description,
+          amount: parseCurrency(parsed.data.amount),
+          type: parsed.data.type,
+          date: new Date(parsed.data.date + "T00:00:00Z"),
+          categoryId: parsed.data.categoryId,
+        },
+      });
+
+      await tx.transactionTag.deleteMany({ where: { transactionId: id } });
+
+      if (parsed.data.tagIds && parsed.data.tagIds.length > 0) {
+        await tx.transactionTag.createMany({
+          data: parsed.data.tagIds.map((tagId) => ({
+            transactionId: id,
+            tagId,
+          })),
+        });
+      }
     });
   } catch (error) {
     console.error("Failed to update transaction:", error);
