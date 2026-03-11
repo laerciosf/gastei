@@ -9,6 +9,7 @@ export const transactionSchema = z.object({
   type: z.enum(["INCOME", "EXPENSE"]),
   categoryId: z.string().min(1, "Categoria é obrigatória"),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida"),
+  tagIds: z.array(z.string().min(1)).max(2).optional(),
 });
 
 export type TransactionInput = z.infer<typeof transactionSchema>;

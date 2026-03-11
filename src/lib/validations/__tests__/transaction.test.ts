@@ -56,4 +56,51 @@ describe("transactionSchema", () => {
     });
     expect(result.success).toBe(false);
   });
+
+  it("accepts transaction with tagIds", () => {
+    const result = transactionSchema.safeParse({
+      description: "Almoço",
+      amount: "25.50",
+      type: "EXPENSE",
+      categoryId: "cat-123",
+      date: "2026-03-01",
+      tagIds: ["tag-1", "tag-2"],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts transaction without tagIds", () => {
+    const result = transactionSchema.safeParse({
+      description: "Almoço",
+      amount: "25.50",
+      type: "EXPENSE",
+      categoryId: "cat-123",
+      date: "2026-03-01",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects more than 2 tagIds", () => {
+    const result = transactionSchema.safeParse({
+      description: "Almoço",
+      amount: "25.50",
+      type: "EXPENSE",
+      categoryId: "cat-123",
+      date: "2026-03-01",
+      tagIds: ["tag-1", "tag-2", "tag-3"],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects empty string tagIds", () => {
+    const result = transactionSchema.safeParse({
+      description: "Almoço",
+      amount: "25.50",
+      type: "EXPENSE",
+      categoryId: "cat-123",
+      date: "2026-03-01",
+      tagIds: [""],
+    });
+    expect(result.success).toBe(false);
+  });
 });
