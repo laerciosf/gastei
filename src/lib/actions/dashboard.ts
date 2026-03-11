@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth-guard";
 import { safeMonth } from "@/lib/utils/date";
+import type { TagSummary } from "@/types";
 
 export interface MonthlySummary {
   totalIncome: number;
@@ -83,4 +84,51 @@ export async function getRecentTransactions(limit = 5) {
     orderBy: { date: "desc" },
     take: safeLimit,
   });
+}
+
+export async function getTagSummary(month?: string): Promise<TagSummary[]> {
+  const session = await requireAuth();
+  if (!session.user.householdId) return [];
+
+  const targetMonth = safeMonth(month);
+  const [year, mon] = targetMonth.split("-").map(Number);
+  const startDate = new Date(Date.UTC(year, mon - 1, 1));
+  const endDate = new Date(Date.UTC(year, mon, 1));
+
+  const results = await prisma.transactionTag.findMany({
+    where: {
+      transaction: {
+        householdId: session.user.householdId,
+        date: { gte: startDate, lt: endDate },
+      },
+    },
+    include: {
+      tag: { select: { id: true, name: true, color: true } },
+      transaction: { select: { amount: true, type: true } },
+    },
+  });
+
+  const summaryMap = new Map<string, TagSummary>();
+
+  for (const row of results) {
+    const existing = summaryMap.get(row.tagId) ?? {
+      tagId: row.tag.id,
+      tagName: row.tag.name,
+      tagColor: row.tag.color,
+      totalIncome: 0,
+      totalExpense: 0,
+    };
+
+    if (row.transaction.type === "INCOME") {
+      existing.totalIncome += row.transaction.amount;
+    } else {
+      existing.totalExpense += row.transaction.amount;
+    }
+
+    summaryMap.set(row.tagId, existing);
+  }
+
+  return [...summaryMap.values()].sort(
+    (a, b) => (b.totalIncome + b.totalExpense) - (a.totalIncome + a.totalExpense)
+  );
 }
