@@ -11,22 +11,19 @@ Aplicativo de finanças pessoais com suporte a households (famílias/grupos). Co
 - **Validação:** Zod v4
 - **Testes:** Vitest + Testing Library
 
-## Features
-
-- Autenticação com email/senha
-- Households — convide membros para gerenciar finanças juntos
-- Transações (receitas e despesas) com categorias e paginação
-- Transações recorrentes com controle de ocorrências
-- Orçamentos mensais por categoria
-- Dashboard com resumo mensal, gráfico de categorias e transações recentes
-- Insights automáticos — variações mês a mês e tendências por categoria
-- Tags em transações (max 2) — autocomplete, cor personalizada, filtro e resumo por tag
-- Gráfico anual comparativo no dashboard
-- Gerenciamento de tags e categorias
-- Tema claro/escuro
-
 ## Roadmap
 
+- [x] Autenticação com email/senha
+- [x] Households — convide membros para gerenciar finanças juntos
+- [x] Transações (receitas e despesas) com categorias e paginação
+- [x] Transações recorrentes com controle de ocorrências
+- [x] Orçamentos mensais por categoria
+- [x] Dashboard com resumo mensal, gráfico de categorias e transações recentes
+- [x] Insights automáticos — variações mês a mês e tendências por categoria
+- [x] Tags em transações (max 2) — autocomplete, cor personalizada, filtro e resumo por tag
+- [x] Gráfico anual comparativo no dashboard
+- [x] Gerenciamento de tags e categorias
+- [x] Tema claro/escuro
 - [ ] Metas de economia (savings goals) com progresso visual
 - [ ] Transações parceladas (installments) — suporte a compras no cartão
 - [ ] Importação de extrato bancário (CSV/OFX)
