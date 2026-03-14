@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, ArrowLeftRight, Tag, Target, Repeat, Users, Settings, LogOut } from "lucide-react";
+import { LayoutDashboard, ArrowLeftRight, Tag, Target, Repeat, Scale, Users, Settings, LogOut } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ export const navItems = [
   { href: "/categories", label: "Categorias", icon: Tag },
   { href: "/budget", label: "Orçamento", icon: Target },
   { href: "/recurring", label: "Recorrências", icon: Repeat },
+  { href: "/splits", label: "Divisões", icon: Scale },
   { href: "/household", label: "Membros", icon: Users },
   { href: "/settings", label: "Configurações", icon: Settings },
 ];
