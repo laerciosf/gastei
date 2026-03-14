@@ -376,13 +376,17 @@ export async function createSettlement(formData: FormData) {
   const balance = balances.find((b) => b.memberId === parsed.data.toUserId);
   const amountCents = parseCurrency(parsed.data.amount);
 
-  if (!balance || balance.amount <= 0) {
-    return { error: "Você não deve nada a este membro" };
+  if (!balance || balance.amount === 0) {
+    return { error: "Não há saldo pendente com este membro" };
   }
 
-  if (amountCents > balance.amount) {
+  if (amountCents > Math.abs(balance.amount)) {
     return { error: "O valor excede o saldo devedor" };
   }
+
+  // Determine direction: positive = I owe them, negative = they owe me
+  const fromId = balance.amount > 0 ? session.user.id : parsed.data.toUserId;
+  const toId = balance.amount > 0 ? parsed.data.toUserId : session.user.id;
 
   try {
     await prisma.transaction.create({
@@ -394,8 +398,8 @@ export async function createSettlement(formData: FormData) {
         categoryId: null,
         userId: session.user.id,
         householdId,
-        settlementFromId: session.user.id,
-        settlementToId: parsed.data.toUserId,
+        settlementFromId: fromId,
+        settlementToId: toId,
       },
     });
   } catch (error) {

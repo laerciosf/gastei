@@ -47,11 +47,9 @@ export function SplitsList({ balances, splits, settlements }: SplitsListProps) {
                         : `${balance.memberName ?? "Membro"} te deve ${formatCurrency(Math.abs(balance.amount))}`}
                     </p>
                   </div>
-                  {balance.amount > 0 && (
-                    <Button size="sm" onClick={() => setSettlementTarget(balance)}>
-                      Acertar
-                    </Button>
-                  )}
+                  <Button size="sm" onClick={() => setSettlementTarget(balance)}>
+                    Acertar
+                  </Button>
                 </CardContent>
               </Card>
             ))}
@@ -169,7 +167,8 @@ export function SplitsList({ balances, splits, settlements }: SplitsListProps) {
           onOpenChange={(open) => !open && setSettlementTarget(null)}
           memberId={settlementTarget.memberId}
           memberName={settlementTarget.memberName}
-          maxAmount={settlementTarget.amount}
+          maxAmount={Math.abs(settlementTarget.amount)}
+          direction={settlementTarget.amount > 0 ? "you-owe" : "they-owe"}
         />
       )}
 

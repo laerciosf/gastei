@@ -21,6 +21,7 @@ interface SettlementDialogProps {
   memberId: string;
   memberName: string | null;
   maxAmount: number;
+  direction: "you-owe" | "they-owe";
 }
 
 export function SettlementDialog({
@@ -29,6 +30,7 @@ export function SettlementDialog({
   memberId,
   memberName,
   maxAmount,
+  direction,
 }: SettlementDialogProps) {
   const [pending, startTransition] = useTransition();
 
@@ -54,7 +56,9 @@ export function SettlementDialog({
         <DialogHeader>
           <DialogTitle>Acertar com {memberName ?? "membro"}</DialogTitle>
           <DialogDescription>
-            Você deve {formatCurrency(maxAmount)}
+            {direction === "you-owe"
+              ? `Você deve ${formatCurrency(maxAmount)}`
+              : `${memberName ?? "Membro"} te deve ${formatCurrency(maxAmount)}`}
           </DialogDescription>
         </DialogHeader>
         <form action={handleSubmit}>
