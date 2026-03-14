@@ -26,6 +26,7 @@ export async function getMonthlySummary(month?: string): Promise<MonthlySummary>
   const dateFilter = {
     householdId: session.user.householdId,
     date: { gte: startDate, lt: endDate },
+    type: { not: "SETTLEMENT" as const },
   };
 
   const [totals, byCategory] = await Promise.all([
@@ -78,7 +79,10 @@ export async function getRecentTransactions(limit = 5, month?: string) {
 
   const safeLimit = Math.min(Math.max(1, limit), 50);
 
-  const where: Record<string, unknown> = { householdId: session.user.householdId };
+  const where: Record<string, unknown> = {
+    householdId: session.user.householdId,
+    type: { not: "SETTLEMENT" },
+  };
 
   if (month) {
     const [year, mon] = month.split("-").map(Number);
@@ -110,6 +114,7 @@ export async function getTagSummary(month?: string): Promise<TagSummary[]> {
       transaction: {
         householdId: session.user.householdId,
         date: { gte: startDate, lt: endDate },
+        type: { not: "SETTLEMENT" },
       },
     },
     include: {

@@ -18,7 +18,7 @@ interface GetTransactionsParams {
 }
 
 type TransactionWithRelations = Transaction & {
-  category: Category;
+  category: Category | null;
   user: { name: string | null };
   recurringOccurrence: { id: string } | null;
   tags: { tag: { id: string; name: string; color: string } }[];
@@ -60,6 +60,8 @@ export async function getTransactions(params: GetTransactionsParams = {}): Promi
 
   if (params.type) {
     where.type = params.type;
+  } else {
+    where.type = { not: "SETTLEMENT" };
   }
 
   if (params.search) {
@@ -78,6 +80,14 @@ export async function getTransactions(params: GetTransactionsParams = {}): Promi
         user: { select: { name: true } },
         recurringOccurrence: { select: { id: true } },
         tags: { include: { tag: { select: { id: true, name: true, color: true } } } },
+        split: {
+          select: {
+            id: true,
+            shares: {
+              select: { userId: true, amount: true, user: { select: { name: true } } },
+            },
+          },
+        },
       },
       orderBy: { date: "desc" },
       skip: (page - 1) * pageSize,
@@ -176,6 +186,7 @@ export async function createTransaction(formData: FormData) {
 
   revalidatePath("/transactions");
   revalidatePath("/dashboard");
+  revalidatePath("/splits");
   return { success: true };
 }
 
@@ -209,6 +220,7 @@ export async function updateTransaction(id: string, formData: FormData) {
 
   const existing = await prisma.transaction.findFirst({
     where: { id, householdId },
+    include: { split: true },
   });
 
   if (!existing) {
@@ -244,6 +256,11 @@ export async function updateTransaction(id: string, formData: FormData) {
         },
       });
 
+      // Delete split if amount changed (user must re-split)
+      if (existing.split && parseCurrency(parsed.data.amount) !== existing.amount) {
+        await tx.split.delete({ where: { id: existing.split.id } });
+      }
+
       await tx.transactionTag.deleteMany({ where: { transactionId: id } });
 
       if (parsed.data.tagIds && parsed.data.tagIds.length > 0) {
@@ -262,6 +279,7 @@ export async function updateTransaction(id: string, formData: FormData) {
 
   revalidatePath("/transactions");
   revalidatePath("/dashboard");
+  revalidatePath("/splits");
   return { success: true };
 }
 
@@ -298,5 +316,6 @@ export async function deleteTransaction(id: string) {
   revalidatePath("/transactions");
   revalidatePath("/dashboard");
   revalidatePath("/recurring");
+  revalidatePath("/splits");
   return { success: true };
 }

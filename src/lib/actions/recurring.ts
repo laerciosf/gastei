@@ -146,6 +146,7 @@ export async function toggleOccurrencePaid(occurrenceId: string) {
   revalidatePath("/recurring");
   revalidatePath("/transactions");
   revalidatePath("/dashboard");
+  revalidatePath("/splits");
   return { success: true };
 }
 

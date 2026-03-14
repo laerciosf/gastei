@@ -55,17 +55,17 @@ export async function getInsights(month?: string): Promise<Insight[]> {
   const [currentTotals, previousTotals, trendTotals] = await Promise.all([
     prisma.transaction.groupBy({
       by: ["categoryId", "type"],
-      where: { householdId, date: currentRange },
+      where: { householdId, date: currentRange, type: { not: "SETTLEMENT" as const } },
       _sum: { amount: true },
     }),
     prisma.transaction.groupBy({
       by: ["categoryId", "type"],
-      where: { householdId, date: previousRange },
+      where: { householdId, date: previousRange, type: { not: "SETTLEMENT" as const } },
       _sum: { amount: true },
     }),
     prisma.transaction.groupBy({
       by: ["categoryId", "type"],
-      where: { householdId, date: { gte: trendStart, lt: trendEnd } },
+      where: { householdId, date: { gte: trendStart, lt: trendEnd }, type: { not: "SETTLEMENT" as const } },
       _sum: { amount: true },
     }),
   ]);
