@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth-guard";
 import { safeMonth } from "@/lib/utils/date";
+import { TransactionType } from "@prisma/client";
 import type { Prisma } from "@prisma/client";
 import type { TagSummary } from "@/types";
 
@@ -27,7 +28,7 @@ export async function getMonthlySummary(month?: string): Promise<MonthlySummary>
   const dateFilter = {
     householdId: session.user.householdId,
     date: { gte: startDate, lt: endDate },
-    type: { not: "SETTLEMENT" as const },
+    type: { not: TransactionType.SETTLEMENT },
   };
 
   const [totals, byCategory] = await Promise.all([
@@ -82,7 +83,7 @@ export async function getRecentTransactions(limit = 5, month?: string) {
 
   const where: Prisma.TransactionWhereInput = {
     householdId: session.user.householdId,
-    type: { not: "SETTLEMENT" },
+    type: { not: TransactionType.SETTLEMENT },
   };
 
   if (month) {
@@ -115,7 +116,7 @@ export async function getTagSummary(month?: string): Promise<TagSummary[]> {
       transaction: {
         householdId: session.user.householdId,
         date: { gte: startDate, lt: endDate },
-        type: { not: "SETTLEMENT" },
+        type: { not: TransactionType.SETTLEMENT },
       },
     },
     include: {

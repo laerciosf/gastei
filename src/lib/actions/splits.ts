@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { TransactionType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth-guard";
 import { splitSchema, settlementSchema } from "@/lib/validations/split";
@@ -44,7 +45,7 @@ export async function getBalance(): Promise<SplitBalance[]> {
     prisma.transaction.findMany({
       where: {
         householdId,
-        type: "SETTLEMENT",
+        type: TransactionType.SETTLEMENT,
         settlementFromId: { not: null },
         settlementToId: { not: null },
       },
@@ -118,7 +119,7 @@ export async function getSplits(month?: string): Promise<SplitTransaction[]> {
   const transactions = await prisma.transaction.findMany({
     where: {
       householdId,
-      type: "EXPENSE",
+      type: TransactionType.EXPENSE,
       split: { isNot: null },
       date: {
         gte: new Date(Date.UTC(year, mon - 1, 1)),
@@ -165,7 +166,7 @@ export async function getSettlements(month?: string): Promise<Settlement[]> {
   const transactions = await prisma.transaction.findMany({
     where: {
       householdId,
-      type: "SETTLEMENT",
+      type: TransactionType.SETTLEMENT,
       settlementFromId: { not: null },
       settlementToId: { not: null },
       date: {
@@ -388,7 +389,7 @@ export async function createSettlement(formData: FormData) {
       data: {
         description: `Acerto com ${targetUser.name ?? "membro"}`,
         amount: amountCents,
-        type: "SETTLEMENT",
+        type: TransactionType.SETTLEMENT,
         date: new Date(),
         categoryId: null,
         userId: session.user.id,

@@ -6,7 +6,8 @@ import { requireAuth } from "@/lib/auth-guard";
 import { transactionSchema } from "@/lib/validations/transaction";
 import { splitSchema } from "@/lib/validations/split";
 import { parseCurrency } from "@/lib/utils/money";
-import type { Transaction, Category, TransactionType, Prisma } from "@prisma/client";
+import { TransactionType } from "@prisma/client";
+import type { Transaction, Category, Prisma } from "@prisma/client";
 
 interface GetTransactionsParams {
   month?: string;
@@ -62,7 +63,7 @@ export async function getTransactions(params: GetTransactionsParams = {}): Promi
   if (params.type) {
     where.type = params.type;
   } else {
-    where.type = { not: "SETTLEMENT" };
+    where.type = { not: TransactionType.SETTLEMENT };
   }
 
   if (params.search) {
