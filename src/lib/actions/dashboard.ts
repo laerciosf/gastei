@@ -46,7 +46,7 @@ export async function getMonthlySummary(month?: string): Promise<MonthlySummary>
   const totalExpense = totals.find((t) => t.type === "EXPENSE")?._sum.amount ?? 0;
 
   // Fetch referenced category data
-  const categoryIds = byCategory.map((g) => g.categoryId);
+  const categoryIds = byCategory.map((g) => g.categoryId).filter((id): id is string => id !== null);
   const categories = categoryIds.length > 0
     ? await prisma.category.findMany({
         where: { id: { in: categoryIds } },
@@ -61,12 +61,12 @@ export async function getMonthlySummary(month?: string): Promise<MonthlySummary>
     balance: totalIncome - totalExpense,
     byCategory: byCategory
       .map((g) => {
-        const cat = catMap.get(g.categoryId);
+        const cat = g.categoryId ? catMap.get(g.categoryId) : undefined;
         return {
           name: cat?.name ?? "Sem categoria",
           color: cat?.color ?? "#6b7280",
           total: g._sum.amount ?? 0,
-          type: g.type,
+          type: g.type as "INCOME" | "EXPENSE",
         };
       })
       .sort((a, b) => b.total - a.total),

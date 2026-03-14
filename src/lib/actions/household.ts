@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth-guard";
 import { DEFAULT_CATEGORIES, DEFAULT_HOUSEHOLD_NAME } from "@/lib/setup-household";
@@ -169,7 +170,7 @@ export async function acceptInvite(inviteId: string) {
     // Reset default split ratio since membership changed
     await tx.household.update({
       where: { id: newHouseholdId },
-      data: { defaultSplitRatio: null },
+      data: { defaultSplitRatio: Prisma.DbNull },
     });
 
     // Check if old household is empty and delete it
@@ -279,7 +280,7 @@ export async function removeMember(userId: string) {
       });
       await tx.household.update({
         where: { id: session.user.householdId! },
-        data: { defaultSplitRatio: null },
+        data: { defaultSplitRatio: Prisma.DbNull },
       });
     });
   } catch (error) {
@@ -325,7 +326,7 @@ export async function updateDefaultSplitRatio(ratio: Record<string, number> | nu
   try {
     await prisma.household.update({
       where: { id: householdId },
-      data: { defaultSplitRatio: ratio },
+      data: { defaultSplitRatio: ratio ?? Prisma.DbNull },
     });
   } catch (error) {
     console.error("Failed to update split ratio:", error);

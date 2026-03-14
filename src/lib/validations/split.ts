@@ -16,7 +16,7 @@ export const settlementSchema = z.object({
 });
 
 export const defaultSplitRatioSchema = z
-  .record(z.coerce.number().int().min(0))
+  .record(z.string(), z.coerce.number().int().min(0))
   .refine((obj) => {
     const values = Object.values(obj);
     return values.length >= 2 && values.reduce((a, b) => a + b, 0) === 100;

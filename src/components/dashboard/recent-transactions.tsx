@@ -12,7 +12,7 @@ interface Transaction {
   amount: number;
   type: TransactionType;
   date: Date;
-  category: { name: string; color: string };
+  category: { name: string; color: string } | null;
 }
 
 export function RecentTransactions({ transactions }: { transactions: Transaction[] }) {
@@ -35,11 +35,11 @@ export function RecentTransactions({ transactions }: { transactions: Transaction
             {transactions.map((tx) => (
               <div key={tx.id} className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="h-2 w-2 rounded-full" style={{ backgroundColor: tx.category.color }} />
+                  <div className="h-2 w-2 rounded-full" style={{ backgroundColor: tx.category?.color ?? "#6b7280" }} />
                   <div>
                     <p className="text-sm font-medium">{tx.description}</p>
                     <p className="text-xs text-muted-foreground">
-                      {format(new Date(tx.date), "dd MMM", { locale: ptBR })} · {tx.category.name}
+                      {format(new Date(tx.date), "dd MMM", { locale: ptBR })} · {tx.category?.name ?? "Sem categoria"}
                     </p>
                   </div>
                 </div>

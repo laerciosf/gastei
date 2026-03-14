@@ -70,7 +70,7 @@ export async function getInsights(month?: string): Promise<Insight[]> {
     }),
   ]);
 
-  const toKey = (categoryId: string, type: string) => `${categoryId}-${type}`;
+  const toKey = (categoryId: string | null, type: string) => `${categoryId ?? "none"}-${type}`;
   const currentMap = new Map(currentTotals.map((t) => [toKey(t.categoryId, t.type), t._sum.amount ?? 0]));
   const previousMap = new Map(previousTotals.map((t) => [toKey(t.categoryId, t.type), t._sum.amount ?? 0]));
   const trendMap = new Map(trendTotals.map((t) => [toKey(t.categoryId, t.type), t._sum.amount ?? 0]));
