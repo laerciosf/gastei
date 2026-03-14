@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth-guard";
 import { DEFAULT_CATEGORIES, DEFAULT_HOUSEHOLD_NAME } from "@/lib/setup-household";
 import { z } from "zod/v4";
+import { defaultSplitRatioSchema } from "@/lib/validations/split";
 
 const inviteSchema = z.object({
   email: z.email("Email inválido"),
@@ -165,6 +166,12 @@ export async function acceptInvite(inviteId: string) {
       data: { status: "REJECTED" },
     });
 
+    // Reset default split ratio since membership changed
+    await tx.household.update({
+      where: { id: newHouseholdId },
+      data: { defaultSplitRatio: null },
+    });
+
     // Check if old household is empty and delete it
     if (oldHouseholdId) {
       const remainingMembers = await tx.user.count({
@@ -270,6 +277,10 @@ export async function removeMember(userId: string) {
       await tx.category.createMany({
         data: DEFAULT_CATEGORIES.map((c) => ({ ...c, householdId: newHousehold.id })),
       });
+      await tx.household.update({
+        where: { id: session.user.householdId! },
+        data: { defaultSplitRatio: null },
+      });
     });
   } catch (error) {
     console.error("Failed to remove member:", error);
@@ -287,4 +298,40 @@ export async function cleanupExpiredInvites() {
       expiresAt: { lt: new Date() },
     },
   });
+}
+
+export async function updateDefaultSplitRatio(ratio: Record<string, number> | null) {
+  const session = await requireAuth();
+  const householdId = session.user.householdId;
+  if (!householdId) {
+    return { error: "Grupo não encontrado" };
+  }
+
+  if (ratio !== null) {
+    const parsed = defaultSplitRatioSchema.safeParse(ratio);
+    if (!parsed.success) {
+      return { error: parsed.error.issues[0]?.message ?? "Dados inválidos" };
+    }
+
+    const memberIds = Object.keys(parsed.data);
+    const validMembers = await prisma.user.count({
+      where: { id: { in: memberIds }, householdId },
+    });
+    if (validMembers !== memberIds.length) {
+      return { error: "Membro não encontrado no grupo" };
+    }
+  }
+
+  try {
+    await prisma.household.update({
+      where: { id: householdId },
+      data: { defaultSplitRatio: ratio },
+    });
+  } catch (error) {
+    console.error("Failed to update split ratio:", error);
+    return { error: "Erro ao salvar proporção. Tente novamente." };
+  }
+
+  revalidatePath("/household");
+  return { success: true };
 }

@@ -2,6 +2,7 @@ import { getHousehold, getSentInvites, getPendingInvites } from "@/lib/actions/h
 import { requireAuth } from "@/lib/auth-guard";
 import { HouseholdMembers } from "@/components/household-members";
 import { PendingInvites } from "@/components/pending-invites";
+import { SplitRatioConfig } from "@/components/split-ratio-config";
 
 export default async function HouseholdPage() {
   const session = await requireAuth();
@@ -27,6 +28,13 @@ export default async function HouseholdPage() {
         />
       ) : (
         <p className="text-muted-foreground">Nenhum grupo encontrado.</p>
+      )}
+
+      {household && (
+        <SplitRatioConfig
+          members={household.members}
+          currentRatio={household.defaultSplitRatio as Record<string, number> | null}
+        />
       )}
     </div>
   );
