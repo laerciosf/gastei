@@ -3,14 +3,12 @@ import { Plus, LayoutDashboard } from "lucide-react";
 import { getMonthlySummary, getRecentTransactions, getTagSummary } from "@/lib/actions/dashboard";
 import { getInsights } from "@/lib/actions/insights";
 import { getAnnualSummary } from "@/lib/actions/annual";
-import { getBalance } from "@/lib/actions/splits";
 import { SummaryCards } from "@/components/dashboard/summary-cards";
 import { DashboardInsights } from "@/components/dashboard/dashboard-insights";
 import { RecentTransactions } from "@/components/dashboard/recent-transactions";
 import { CategoryChart } from "@/components/dashboard/category-chart";
 import { AnnualChart } from "@/components/dashboard/annual-chart";
 import { TagSummary } from "@/components/dashboard/tag-summary";
-import { SplitBalanceCard } from "@/components/dashboard/split-balance-card";
 import { MonthPicker } from "@/components/month-picker";
 import { Button } from "@/components/ui/button";
 
@@ -23,13 +21,12 @@ export default async function DashboardPage({ searchParams }: Props) {
   const monthRegex = /^\d{4}-(0[1-9]|1[0-2])$/;
   const currentMonth = params.month && monthRegex.test(params.month) ? params.month : new Date().toISOString().slice(0, 7);
 
-  const [summary, recentTransactions, insights, tagSummary, annualSummary, balances] = await Promise.all([
+  const [summary, recentTransactions, insights, tagSummary, annualSummary] = await Promise.all([
     getMonthlySummary(currentMonth),
     getRecentTransactions(5, currentMonth),
     getInsights(currentMonth),
     getTagSummary(currentMonth),
     getAnnualSummary(),
-    getBalance(),
   ]);
 
   const isEmpty = summary.totalIncome === 0 && summary.totalExpense === 0 && recentTransactions.length === 0;
@@ -78,7 +75,6 @@ export default async function DashboardPage({ searchParams }: Props) {
             currentMonthIndex={annualSummary.currentMonthIndex}
           />
           <TagSummary data={tagSummary} />
-          <SplitBalanceCard balances={balances} />
         </>
       )}
     </div>

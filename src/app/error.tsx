@@ -11,7 +11,6 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    // TODO: send to error monitoring service (e.g. Sentry)
     console.error("Unhandled error:", error);
   }, [error]);
 

@@ -11,7 +11,6 @@ export default function AppError({
   reset: () => void;
 }) {
   useEffect(() => {
-    // TODO: send to error monitoring service (e.g. Sentry)
     console.error("Unhandled app error:", error);
   }, [error]);
 

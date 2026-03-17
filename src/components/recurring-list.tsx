@@ -103,7 +103,6 @@ export function RecurringList({ recurring, occurrences, categories }: RecurringL
     setFormOpen(true);
   }
 
-  // Agrupar occurrences por recurringTransaction.id
   const occurrencesByTemplate = new Map<string, Occurrence[]>();
   for (const occ of occurrences) {
     const key = occ.recurringTransaction.id;
@@ -139,7 +138,6 @@ export function RecurringList({ recurring, occurrences, categories }: RecurringL
 
           return (
             <div key={item.id} className="rounded-md border">
-              {/* Header do template */}
               <div className="flex items-center justify-between p-4">
                 <div className="flex items-center gap-3">
                   <button
@@ -195,7 +193,6 @@ export function RecurringList({ recurring, occurrences, categories }: RecurringL
                 </div>
               </div>
 
-              {/* Lista de meses materializados */}
               {isExpanded && templateOccurrences.length > 0 && (
                 <div className="border-t bg-muted/30">
                   {templateOccurrences.map((occ) => {

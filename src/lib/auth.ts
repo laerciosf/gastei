@@ -54,7 +54,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     ...authConfig.callbacks,
     async jwt({ token, user, trigger, session }) {
       if (trigger === "update" && session?.householdId !== undefined) {
-        // Validate that the householdId belongs to this user
         const dbUserUpdate = await prisma.user.findUnique({
           where: { id: token.sub! },
           select: { householdId: true },

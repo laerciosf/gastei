@@ -107,7 +107,6 @@ export async function toggleOccurrencePaid(occurrenceId: string) {
           ? Math.round(template.amount / template.installments)
           : template.amount;
 
-        // Clean up orphaned transaction from inconsistent state
         if (occurrence.transactionId) {
           await tx.transaction.delete({ where: { id: occurrence.transactionId } }).catch(() => {});
         }
@@ -196,7 +195,6 @@ export async function createRecurringTransaction(formData: FormData) {
       },
     });
 
-    // Materialize all pending months (startMonth through current month)
     await materializeRecurring();
   } catch (error) {
     console.error("Failed to create recurring transaction:", error);
@@ -298,10 +296,6 @@ export async function deleteRecurringTransaction(id: string) {
   return { success: true };
 }
 
-/**
- * Materializes recurring transactions for all pending months
- * (from startMonth through current month, respecting endMonth).
- */
 export async function materializeRecurring() {
   const session = await requireAuth();
   if (!session.user.householdId) return;
@@ -331,7 +325,6 @@ export async function materializeRecurring() {
 
   if (templates.length === 0) return;
 
-  // Fetch all existing occurrences for these templates
   const existingOccurrences = await prisma.recurringOccurrence.findMany({
     where: {
       recurringTransactionId: { in: templates.map((t) => t.id) },
@@ -339,7 +332,6 @@ export async function materializeRecurring() {
     select: { recurringTransactionId: true, month: true },
   });
 
-  // Set of "templateId:month" already materialized
   const existingSet = new Set(
     existingOccurrences.map((o) => `${o.recurringTransactionId}:${o.month}`)
   );
@@ -348,7 +340,6 @@ export async function materializeRecurring() {
   const endOfYear = `${currentMonth.split("-")[0]}-12`;
 
   for (const template of templates) {
-    // Installments: materialize up to endMonth. Fixed: materialize through end of year.
     const lastMonth = template.installments ? (template.endMonth ?? currentMonth) : endOfYear;
     const allMonths = monthRange(template.startMonth, lastMonth);
 
@@ -369,7 +360,6 @@ export async function materializeRecurring() {
   });
 }
 
-/** Adds N months to a "YYYY-MM" string. */
 function addMonths(month: string, n: number): string {
   const [y, m] = month.split("-").map(Number);
   const total = y * 12 + (m - 1) + n;
@@ -378,7 +368,6 @@ function addMonths(month: string, n: number): string {
   return `${newYear}-${String(newMonth).padStart(2, "0")}`;
 }
 
-/** Generates all months in the range [start, end] in "YYYY-MM" format. */
 function monthRange(start: string, end: string): string[] {
   const months: string[] = [];
   const [sy, sm] = start.split("-").map(Number);

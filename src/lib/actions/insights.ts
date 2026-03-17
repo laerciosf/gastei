@@ -1,7 +1,6 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { TransactionType } from "@prisma/client";
 import { requireAuth } from "@/lib/auth-guard";
 import { safeMonth } from "@/lib/utils/date";
 import type { Insight } from "@/types";
@@ -56,17 +55,17 @@ export async function getInsights(month?: string): Promise<Insight[]> {
   const [currentTotals, previousTotals, trendTotals] = await Promise.all([
     prisma.transaction.groupBy({
       by: ["categoryId", "type"],
-      where: { householdId, date: currentRange, type: { not: TransactionType.SETTLEMENT } },
+      where: { householdId, date: currentRange },
       _sum: { amount: true },
     }),
     prisma.transaction.groupBy({
       by: ["categoryId", "type"],
-      where: { householdId, date: previousRange, type: { not: TransactionType.SETTLEMENT } },
+      where: { householdId, date: previousRange },
       _sum: { amount: true },
     }),
     prisma.transaction.groupBy({
       by: ["categoryId", "type"],
-      where: { householdId, date: { gte: trendStart, lt: trendEnd }, type: { not: TransactionType.SETTLEMENT } },
+      where: { householdId, date: { gte: trendStart, lt: trendEnd } },
       _sum: { amount: true },
     }),
   ]);

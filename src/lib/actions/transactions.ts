@@ -4,9 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth-guard";
 import { transactionSchema } from "@/lib/validations/transaction";
-import { splitSchema } from "@/lib/validations/split";
 import { parseCurrency } from "@/lib/utils/money";
-import { TransactionType } from "@prisma/client";
 import type { Transaction, Category, Prisma } from "@prisma/client";
 
 interface GetTransactionsParams {
@@ -24,6 +22,7 @@ type TransactionWithRelations = Transaction & {
   user: { name: string | null };
   recurringOccurrence: { id: string } | null;
   tags: { tag: { id: string; name: string; color: string } }[];
+  splitEntries: { id: string; paid: boolean }[];
 };
 
 export interface PaginatedTransactions {
@@ -62,8 +61,6 @@ export async function getTransactions(params: GetTransactionsParams = {}): Promi
 
   if (params.type) {
     where.type = params.type;
-  } else {
-    where.type = { not: TransactionType.SETTLEMENT };
   }
 
   if (params.search) {
@@ -82,14 +79,7 @@ export async function getTransactions(params: GetTransactionsParams = {}): Promi
         user: { select: { name: true } },
         recurringOccurrence: { select: { id: true } },
         tags: { include: { tag: { select: { id: true, name: true, color: true } } } },
-        split: {
-          select: {
-            id: true,
-            shares: {
-              select: { userId: true, amount: true, user: { select: { name: true } } },
-            },
-          },
-        },
+        splitEntries: { select: { id: true, paid: true } },
       },
       orderBy: { date: "desc" },
       skip: (page - 1) * pageSize,
@@ -126,15 +116,6 @@ export async function createTransaction(formData: FormData) {
     const rawTagIds = formData.get("tagIds");
     if (rawTagIds) tagIds = JSON.parse(rawTagIds as string);
   } catch {
-    // ignore malformed tagIds — Zod will catch invalid values
-  }
-
-  let shares: { userId: string; amount: number }[] | null = null;
-  try {
-    const rawShares = formData.get("shares");
-    if (rawShares) shares = JSON.parse(rawShares as string);
-  } catch {
-    // ignore malformed shares
   }
 
   const parsed = transactionSchema.safeParse({
@@ -166,17 +147,6 @@ export async function createTransaction(formData: FormData) {
     }
   }
 
-  let validatedShares: { userId: string; amount: number }[] | null = null;
-  if (shares && shares.length >= 2 && parsed.data.type === "EXPENSE") {
-    const parsedShares = splitSchema.safeParse(shares);
-    if (parsedShares.success) {
-      const shareSum = parsedShares.data.reduce((sum, s) => sum + s.amount, 0);
-      if (shareSum === parseCurrency(parsed.data.amount)) {
-        validatedShares = parsedShares.data;
-      }
-    }
-  }
-
   try {
     await prisma.$transaction(async (tx) => {
       const transaction = await tx.transaction.create({
@@ -199,19 +169,6 @@ export async function createTransaction(formData: FormData) {
           })),
         });
       }
-
-      if (validatedShares) {
-        await tx.split.create({
-          data: {
-            transactionId: transaction.id,
-            shares: {
-              createMany: {
-                data: validatedShares.map((s) => ({ userId: s.userId, amount: s.amount })),
-              },
-            },
-          },
-        });
-      }
     });
   } catch (error) {
     console.error("Failed to create transaction:", error);
@@ -220,7 +177,6 @@ export async function createTransaction(formData: FormData) {
 
   revalidatePath("/transactions");
   revalidatePath("/dashboard");
-  revalidatePath("/splits");
   return { success: true };
 }
 
@@ -236,7 +192,6 @@ export async function updateTransaction(id: string, formData: FormData) {
     const rawTagIds = formData.get("tagIds");
     if (rawTagIds) tagIds = JSON.parse(rawTagIds as string);
   } catch {
-    // ignore malformed tagIds — Zod will catch invalid values
   }
 
   const parsed = transactionSchema.safeParse({
@@ -254,7 +209,7 @@ export async function updateTransaction(id: string, formData: FormData) {
 
   const existing = await prisma.transaction.findFirst({
     where: { id, householdId },
-    include: { split: true },
+    include: { splitEntries: { select: { id: true } } },
   });
 
   if (!existing) {
@@ -290,9 +245,8 @@ export async function updateTransaction(id: string, formData: FormData) {
         },
       });
 
-      // Delete split if amount changed (user must re-split)
-      if (existing.split && parseCurrency(parsed.data.amount) !== existing.amount) {
-        await tx.split.delete({ where: { id: existing.split.id } });
+      if (existing.splitEntries.length > 0 && parseCurrency(parsed.data.amount) !== existing.amount) {
+        await tx.splitEntry.deleteMany({ where: { transactionId: id } });
       }
 
       await tx.transactionTag.deleteMany({ where: { transactionId: id } });
@@ -313,7 +267,6 @@ export async function updateTransaction(id: string, formData: FormData) {
 
   revalidatePath("/transactions");
   revalidatePath("/dashboard");
-  revalidatePath("/splits");
   return { success: true };
 }
 
@@ -350,6 +303,5 @@ export async function deleteTransaction(id: string) {
   revalidatePath("/transactions");
   revalidatePath("/dashboard");
   revalidatePath("/recurring");
-  revalidatePath("/splits");
   return { success: true };
 }

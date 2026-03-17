@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CurrencyInput } from "@/components/ui/currency-input";
@@ -11,7 +11,6 @@ import { createTransaction, updateTransaction } from "@/lib/actions/transactions
 import { validateTransactionFormData } from "@/lib/validations/shared";
 import { toast } from "sonner";
 import { TagPicker } from "@/components/tag-picker";
-import { SplitSection } from "@/components/split-section";
 import type { TransactionType, Category, Tag } from "@/types";
 
 type TransactionFormCategory = Pick<Category, "id" | "name" | "type">;
@@ -32,49 +31,32 @@ interface TransactionFormProps {
   categories: TransactionFormCategory[];
   tags: Tag[];
   transaction?: TransactionData | null;
-  members?: { id: string; name: string | null }[];
-  defaultSplitRatio?: Record<string, number> | null;
 }
 
-export function TransactionForm({ open, onOpenChange, categories, tags, transaction, members, defaultSplitRatio }: TransactionFormProps) {
+export function TransactionForm({ open, onOpenChange, categories, tags, transaction }: TransactionFormProps) {
   const [loading, setLoading] = useState(false);
   const [type, setType] = useState(transaction?.type ?? "EXPENSE");
   const [categoryId, setCategoryId] = useState(transaction?.categoryId ?? "");
   const [tagIds, setTagIds] = useState<string[]>(transaction?.tagIds ?? []);
-  const [shares, setShares] = useState<{ userId: string; amount: number }[] | null>(null);
-  const [amountCents, setAmountCents] = useState(transaction?.amount ?? 0);
   const isEditing = !!transaction;
-
-  const showSplit = type === "EXPENSE" && (members?.length ?? 0) >= 2;
 
   useEffect(() => {
     if (open) {
       setType(transaction?.type ?? "EXPENSE");
       setCategoryId(transaction?.categoryId ?? "");
       setTagIds(transaction?.tagIds ?? []);
-      setShares(null);
-      setAmountCents(transaction?.amount ?? 0);
     }
-  }, [open, transaction?.type, transaction?.categoryId, transaction?.tagIds, transaction?.amount]);
+  }, [open, transaction?.type, transaction?.categoryId, transaction?.tagIds]);
 
   const filteredCategories = categories.filter((c) => c.type === type);
 
   function handleTypeChange(newType: TransactionType) {
     setType(newType);
-    // Clear category if it doesn't belong to the new type
     const currentCat = categories.find((c) => c.id === categoryId);
     if (currentCat && currentCat.type !== newType) {
       setCategoryId("");
     }
-    // Clear shares when switching away from EXPENSE
-    if (newType !== "EXPENSE") {
-      setShares(null);
-    }
   }
-
-  const handleSharesChange = useCallback((newShares: { userId: string; amount: number }[] | null) => {
-    setShares(newShares);
-  }, []);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -82,10 +64,6 @@ export function TransactionForm({ open, onOpenChange, categories, tags, transact
     const formData = new FormData(e.currentTarget);
     formData.set("type", type);
     formData.set("tagIds", JSON.stringify(tagIds));
-
-    if (shares) {
-      formData.set("shares", JSON.stringify(shares));
-    }
 
     const validationError = validateTransactionFormData(formData);
     if (validationError) {
@@ -144,7 +122,6 @@ export function TransactionForm({ open, onOpenChange, categories, tags, transact
               id="amount"
               name="amount"
               defaultValueCents={transaction?.amount ?? 0}
-              onValueChange={setAmountCents}
             />
           </div>
           <div className="space-y-2">
@@ -173,15 +150,6 @@ export function TransactionForm({ open, onOpenChange, categories, tags, transact
             />
           </div>
           <TagPicker tags={tags} selectedTagIds={tagIds} onChange={setTagIds} />
-          {showSplit && (
-            <SplitSection
-              members={members!}
-              totalAmount={amountCents}
-              defaultRatio={defaultSplitRatio ?? null}
-              shares={shares}
-              onChange={handleSharesChange}
-            />
-          )}
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "Salvando..." : "Salvar"}
           </Button>

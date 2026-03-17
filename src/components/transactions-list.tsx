@@ -1,24 +1,20 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Trash2, Pencil, Plus, ArrowLeftRight, Repeat, Scale } from "lucide-react";
+import { Trash2, Pencil, Plus, ArrowLeftRight, Repeat, List, LayoutGrid, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { CurrencyInput } from "@/components/ui/currency-input";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { TransactionForm } from "@/components/transaction-form";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { TransactionPagination } from "@/components/transaction-pagination";
 import { deleteTransaction } from "@/lib/actions/transactions";
-import { createSplit, updateSplit, deleteSplit } from "@/lib/actions/splits";
 import { useDeleteAction } from "@/hooks/use-delete-action";
 import { formatCurrency } from "@/lib/utils/money";
-import { toast } from "sonner";
 import type { TransactionType, Tag } from "@/types";
 
 interface Transaction {
@@ -31,10 +27,7 @@ interface Transaction {
   user: { name: string | null };
   recurringOccurrence?: { id: string } | null;
   tags: { tag: { id: string; name: string; color: string } }[];
-  split?: {
-    id: string;
-    shares: { userId: string; amount: number; user: { name: string | null } }[];
-  } | null;
+  splitEntries?: { id: string; paid: boolean }[];
 }
 
 interface TransactionsListProps {
@@ -45,15 +38,6 @@ interface TransactionsListProps {
   totalPages: number;
   totalIncome: number;
   totalExpense: number;
-  members?: { id: string; name: string | null }[];
-  defaultSplitRatio?: Record<string, number> | null;
-}
-
-interface SplitDialogState {
-  transactionId: string;
-  transactionAmount: number;
-  splitId?: string;
-  existingShares?: { userId: string; amount: number }[];
 }
 
 export function TransactionsList({
@@ -64,21 +48,13 @@ export function TransactionsList({
   totalPages,
   totalIncome,
   totalExpense,
-  members = [],
-  defaultSplitRatio,
 }: TransactionsListProps) {
+  const [viewMode, setViewMode] = useState<"list" | "category">("list");
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Transaction | null>(null);
   const { deleteId, setDeleteId, deleting, handleDelete } = useDeleteAction(deleteTransaction);
-  const [splitDialog, setSplitDialog] = useState<SplitDialogState | null>(null);
-  const [splitShares, setSplitShares] = useState<Record<string, number>>({});
-  const [splitPending, startSplitTransition] = useTransition();
-  const [deleteSplitDialog, setDeleteSplitDialog] = useState<string | null>(null);
-  const [deletingSplit, startDeleteSplitTransition] = useTransition();
   const router = useRouter();
   const searchParams = useSearchParams();
-
-  const hasSplitMembers = members.length >= 2;
 
   function handleEdit(tx: Transaction) {
     setEditing(tx);
@@ -101,97 +77,7 @@ export function TransactionsList({
     router.push(`/transactions?${params.toString()}`);
   }
 
-  function openSplitDialog(tx: Transaction) {
-    const initial: Record<string, number> = {};
-    if (tx.split) {
-      for (const share of tx.split.shares) {
-        initial[share.userId] = share.amount;
-      }
-    } else {
-      // Equal split by default, or use ratio
-      if (defaultSplitRatio && Object.keys(defaultSplitRatio).length >= 2) {
-        const totalRatio = Object.values(defaultSplitRatio).reduce((a, b) => a + b, 0);
-        let remaining = tx.amount;
-        const entries = members.filter((m) => defaultSplitRatio[m.id] !== undefined && defaultSplitRatio[m.id] > 0);
-        for (let i = 0; i < entries.length; i++) {
-          if (i === entries.length - 1) {
-            initial[entries[i].id] = remaining;
-          } else {
-            const amount = Math.round((tx.amount * defaultSplitRatio[entries[i].id]) / totalRatio);
-            initial[entries[i].id] = amount;
-            remaining -= amount;
-          }
-        }
-      } else {
-        const count = members.length;
-        const base = Math.floor(tx.amount / count);
-        const remainder = tx.amount - base * count;
-        members.forEach((m, i) => {
-          initial[m.id] = base + (i < remainder ? 1 : 0);
-        });
-      }
-    }
-
-    setSplitShares(initial);
-    setSplitDialog({
-      transactionId: tx.id,
-      transactionAmount: tx.amount,
-      splitId: tx.split?.id,
-      existingShares: tx.split?.shares.map((s) => ({ userId: s.userId, amount: s.amount })),
-    });
-  }
-
-  function handleSplitShareChange(userId: string, amount: number) {
-    setSplitShares((prev) => ({ ...prev, [userId]: amount }));
-  }
-
-  function handleSplitSave() {
-    if (!splitDialog) return;
-
-    const sharesArray = members
-      .filter((m) => splitShares[m.id] !== undefined && splitShares[m.id] > 0)
-      .map((m) => ({ userId: m.id, amount: splitShares[m.id] }));
-
-    const sum = sharesArray.reduce((acc, s) => acc + s.amount, 0);
-    if (sum !== splitDialog.transactionAmount) {
-      toast.error("A soma das partes deve ser igual ao valor da transação");
-      return;
-    }
-
-    if (sharesArray.length < 2) {
-      toast.error("Mínimo 2 membros para dividir");
-      return;
-    }
-
-    startSplitTransition(async () => {
-      const result = splitDialog.splitId
-        ? await updateSplit(splitDialog.splitId, sharesArray)
-        : await createSplit(splitDialog.transactionId, sharesArray);
-
-      if (result.error) {
-        toast.error(result.error);
-      } else {
-        toast.success(splitDialog.splitId ? "Divisão atualizada" : "Divisão criada");
-        setSplitDialog(null);
-      }
-    });
-  }
-
-  function handleDeleteSplit() {
-    if (!deleteSplitDialog) return;
-    startDeleteSplitTransition(async () => {
-      const result = await deleteSplit(deleteSplitDialog);
-      if (result.error) {
-        toast.error(result.error);
-      } else {
-        toast.success("Divisão removida");
-      }
-      setDeleteSplitDialog(null);
-    });
-  }
-
-  const splitDialogSum = Object.values(splitShares).reduce((acc, v) => acc + v, 0);
-  const splitDialogValid = splitDialog ? splitDialogSum === splitDialog.transactionAmount : false;
+  const balance = totalIncome - totalExpense;
 
   return (
     <>
@@ -223,108 +109,71 @@ export function TransactionsList({
             </Select>
           )}
         </div>
+        <div className="flex items-center gap-1">
+          <Button
+            variant={viewMode === "list" ? "secondary" : "ghost"}
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => setViewMode("list")}
+            title="Lista por data"
+          >
+            <List className="h-4 w-4" />
+          </Button>
+          <Button
+            variant={viewMode === "category" ? "secondary" : "ghost"}
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => setViewMode("category")}
+            title="Agrupar por categoria"
+          >
+            <LayoutGrid className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       {(totalIncome > 0 || totalExpense > 0) && (
-        <div className="flex gap-4 text-sm">
+        <div className="flex gap-4 text-sm flex-wrap">
           <span className="text-emerald-600 font-mono tabular-nums">+ {formatCurrency(totalIncome)}</span>
           <span className="text-rose-600 font-mono tabular-nums">- {formatCurrency(totalExpense)}</span>
-          <span className={`font-semibold font-mono tabular-nums ${totalIncome - totalExpense >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-            = {formatCurrency(Math.abs(totalIncome - totalExpense))}
+          <span className={`font-semibold font-mono tabular-nums ${balance >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+            = {formatCurrency(Math.abs(balance))}
           </span>
         </div>
       )}
 
-      <div className="space-y-2">
-        {transactions.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <ArrowLeftRight className="h-12 w-12 text-muted-foreground/50" />
-            <p className="mt-4 text-sm text-muted-foreground">Nenhuma transação encontrada</p>
-            <Button variant="outline" size="sm" className="mt-4" onClick={handleNew}>
-              <Plus className="mr-2 h-4 w-4" />
-              Nova Transação
-            </Button>
-          </div>
-        )}
-        {transactions.map((tx) => (
-          <div key={tx.id} className="flex items-center justify-between rounded-md border p-4">
-            <div className="flex items-center gap-3">
-              <div
-                className="h-3 w-3 rounded-full"
-                style={{ backgroundColor: tx.category?.color ?? "#6b7280" }}
-              />
-              <div>
-                <div className="flex items-center gap-2">
-                  <p className="font-medium">{tx.description}</p>
-                  {tx.recurringOccurrence && (
-                    <Badge variant="secondary" className="gap-1 text-[10px] px-1.5 py-0">
-                      <Repeat className="h-3 w-3" />
-                      Recorrente
-                    </Badge>
-                  )}
-                  {tx.split && (
-                    <Badge
-                      variant="secondary"
-                      className="gap-1 text-[10px] px-1.5 py-0 cursor-pointer"
-                      onClick={() => openSplitDialog(tx)}
-                    >
-                      <Scale className="h-3 w-3" />
-                      Dividida
-                    </Badge>
-                  )}
-                  {tx.tags.map(({ tag }) => (
-                    <Badge
-                      key={tag.id}
-                      variant="secondary"
-                      className="text-[10px] px-1.5 py-0"
-                      style={{ backgroundColor: `${tag.color}20`, color: tag.color }}
-                    >
-                      {tag.name}
-                    </Badge>
-                  ))}
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {tx.category?.name ?? "Sem categoria"} · {format(new Date(tx.date), "dd MMM yyyy", { locale: ptBR })}
-                  {tx.user.name && ` · ${tx.user.name}`}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className={`font-semibold font-mono tabular-nums ${tx.type === "INCOME" ? "text-emerald-600" : "text-rose-600"}`}>
-                {tx.type === "INCOME" ? "+" : "-"} {formatCurrency(tx.amount)}
-              </span>
-              {tx.type === "EXPENSE" && hasSplitMembers && !tx.split && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => openSplitDialog(tx)}
-                  title="Dividir despesa"
-                >
-                  <Scale className="h-4 w-4" />
-                </Button>
-              )}
-              {tx.type !== "SETTLEMENT" && (
-                <>
-                  <Button variant="ghost" size="icon" onClick={() => handleEdit(tx)}>
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => setDeleteId(tx.id)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
+      {transactions.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <ArrowLeftRight className="h-12 w-12 text-muted-foreground/50" />
+          <p className="mt-4 text-sm text-muted-foreground">Nenhuma transação encontrada</p>
+          <Button variant="outline" size="sm" className="mt-4" onClick={handleNew}>
+            <Plus className="mr-2 h-4 w-4" />
+            Nova Transação
+          </Button>
+        </div>
+      ) : viewMode === "list" ? (
+        <div className="space-y-2">
+          {transactions.map((tx) => (
+            <TransactionRow
+              key={tx.id}
+              tx={tx}
+              onEdit={handleEdit}
+              onDelete={setDeleteId}
+            />
+          ))}
+        </div>
+      ) : (
+        <CategoryGroupedView
+          transactions={transactions}
+          onEdit={handleEdit}
+          onDelete={setDeleteId}
+        />
+      )}
 
       <TransactionForm
         open={formOpen}
         onOpenChange={setFormOpen}
         categories={categories}
         tags={tags}
-        members={members}
-        defaultSplitRatio={defaultSplitRatio}
         transaction={
           editing
             ? {
@@ -349,73 +198,184 @@ export function TransactionsList({
         loading={deleting}
       />
 
-      {/* Split dialog for adding/editing split on existing transactions */}
-      <Dialog open={!!splitDialog} onOpenChange={(open) => !open && setSplitDialog(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {splitDialog?.splitId ? "Editar divisão" : "Dividir despesa"}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            {splitDialog && (
-              <p className="text-sm text-muted-foreground">
-                Total: {formatCurrency(splitDialog.transactionAmount)}
-              </p>
-            )}
-            {members.map((member) => (
-              <div key={member.id} className="flex items-center gap-3">
-                <Label className="text-sm min-w-[80px] truncate">
-                  {member.name ?? "Sem nome"}
-                </Label>
-                <CurrencyInput
-                  name={`split-dialog-${member.id}`}
-                  defaultValueCents={splitShares[member.id] ?? 0}
-                  key={`${splitDialog?.transactionId}-${member.id}-${splitShares[member.id] ?? 0}`}
-                  className="flex-1"
-                  onValueChange={(cents) => handleSplitShareChange(member.id, cents)}
-                />
-              </div>
-            ))}
-            {splitDialog && !splitDialogValid && (
-              <p className="text-xs text-destructive">
-                Soma ({formatCurrency(splitDialogSum)}) diferente do total ({formatCurrency(splitDialog.transactionAmount)})
-              </p>
-            )}
-            <div className="flex gap-2">
-              <Button
-                className="flex-1"
-                onClick={handleSplitSave}
-                disabled={splitPending || !splitDialogValid}
-              >
-                {splitPending ? "Salvando..." : "Salvar"}
-              </Button>
-              {splitDialog?.splitId && (
-                <Button
-                  variant="destructive"
-                  onClick={() => {
-                    setDeleteSplitDialog(splitDialog.splitId!);
-                    setSplitDialog(null);
-                  }}
-                >
-                  Remover
-                </Button>
-              )}
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <ConfirmDialog
-        open={!!deleteSplitDialog}
-        onOpenChange={(open) => !open && setDeleteSplitDialog(null)}
-        title="Remover divisão"
-        description="Tem certeza que deseja remover esta divisão?"
-        onConfirm={handleDeleteSplit}
-        loading={deletingSplit}
-      />
-
-      {totalPages > 1 && <TransactionPagination page={page} totalPages={totalPages} />}
+      {viewMode === "list" && totalPages > 1 && (
+        <TransactionPagination page={page} totalPages={totalPages} />
+      )}
     </>
+  );
+}
+
+function TransactionRow({
+  tx,
+  onEdit,
+  onDelete,
+  showCategoryDot = true,
+}: {
+  tx: Transaction;
+  onEdit: (tx: Transaction) => void;
+  onDelete: (id: string) => void;
+  showCategoryDot?: boolean;
+}) {
+  return (
+    <div className="rounded-md border">
+      <div className="flex items-center justify-between p-4">
+        <div className="flex items-center gap-3">
+          {showCategoryDot && (
+            <div
+              className="h-3 w-3 rounded-full"
+              style={{ backgroundColor: tx.category?.color ?? "#6b7280" }}
+            />
+          )}
+          <div>
+            <div className="flex items-center gap-2">
+              <p className="font-medium">{tx.description}</p>
+              {tx.recurringOccurrence && (
+                <Badge variant="secondary" className="gap-1 text-[10px] px-1.5 py-0">
+                  <Repeat className="h-3 w-3" />
+                  Recorrente
+                </Badge>
+              )}
+              {tx.splitEntries && tx.splitEntries.length > 0 && (
+                tx.splitEntries.every((e) => e.paid) ? (
+                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                    Dívida paga
+                  </Badge>
+                ) : (
+                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                    Possui dívida
+                  </Badge>
+                )
+              )}
+              {tx.tags.map(({ tag }) => (
+                <Badge
+                  key={tag.id}
+                  variant="secondary"
+                  className="text-[10px] px-1.5 py-0"
+                  style={{ backgroundColor: `${tag.color}20`, color: tag.color }}
+                >
+                  {tag.name}
+                </Badge>
+              ))}
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {tx.category?.name ?? "Sem categoria"} · {format(new Date(tx.date), "dd MMM yyyy", { locale: ptBR })}
+              {tx.user.name && ` · ${tx.user.name}`}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className={`font-semibold font-mono tabular-nums ${tx.type === "INCOME" ? "text-emerald-600" : "text-rose-600"}`}>
+            {tx.type === "INCOME" ? "+" : "-"} {formatCurrency(tx.amount)}
+          </span>
+          <Button variant="ghost" size="icon" onClick={() => onEdit(tx)}>
+            <Pencil className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => onDelete(tx.id)}>
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+interface CategoryGroup {
+  categoryId: string;
+  categoryName: string;
+  categoryColor: string;
+  total: number;
+  transactions: Transaction[];
+}
+
+function CategoryGroupedView({
+  transactions,
+  onEdit,
+  onDelete,
+}: {
+  transactions: Transaction[];
+  onEdit: (tx: Transaction) => void;
+  onDelete: (id: string) => void;
+}) {
+  const groups = transactions.reduce<Record<string, CategoryGroup>>((acc, tx) => {
+    const key = tx.category?.id ?? "uncategorized";
+    if (!acc[key]) {
+      acc[key] = {
+        categoryId: key,
+        categoryName: tx.category?.name ?? "Sem categoria",
+        categoryColor: tx.category?.color ?? "#6b7280",
+        total: 0,
+        transactions: [],
+      };
+    }
+    acc[key].total += tx.amount;
+    acc[key].transactions.push(tx);
+    return acc;
+  }, {});
+
+  const sortedGroups = Object.values(groups).sort((a, b) => b.total - a.total);
+
+  for (const group of sortedGroups) {
+    group.transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }
+
+  return (
+    <div className="space-y-3">
+      {sortedGroups.map((group) => (
+        <CategoryAccordion
+          key={group.categoryId}
+          group={group}
+          onEdit={onEdit}
+          onDelete={onDelete}
+        />
+      ))}
+    </div>
+  );
+}
+
+function CategoryAccordion({
+  group,
+  onEdit,
+  onDelete,
+}: {
+  group: CategoryGroup;
+  onEdit: (tx: Transaction) => void;
+  onDelete: (id: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <CollapsibleTrigger asChild>
+        <button className="flex w-full items-center justify-between rounded-md border p-4 hover:bg-muted/50 transition-colors">
+          <div className="flex items-center gap-3">
+            <div
+              className="h-3 w-3 rounded-full"
+              style={{ backgroundColor: group.categoryColor }}
+            />
+            <span className="font-medium">{group.categoryName}</span>
+            <span className="text-sm text-muted-foreground">({group.transactions.length})</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="font-semibold font-mono tabular-nums text-rose-600">
+              {formatCurrency(group.total)}
+            </span>
+            <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
+          </div>
+        </button>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div className="space-y-1 pt-1 pl-4">
+          {group.transactions.map((tx) => (
+            <TransactionRow
+              key={tx.id}
+              tx={tx}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              showCategoryDot={false}
+            />
+          ))}
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
   );
 }

@@ -22,12 +22,7 @@ model User {
   transactions          Transaction[]
   accounts              Account[]
   sessions              Session[]
-  sentInvites           HouseholdInvite[] @relation("InviteSender")
-  receivedInvites       HouseholdInvite[] @relation("InviteReceiver")
   recurringTransactions RecurringTransaction[]
-  splitShares           SplitShare[]
-  settlementsFrom       Transaction[]     @relation("settlementFrom")
-  settlementsTo         Transaction[]     @relation("settlementTo")
 
   @@index([householdId])
   @@map("users")
@@ -79,49 +74,19 @@ model Household {
   createdAt DateTime @default(now())
   ownerId   String
 
-  defaultSplitRatio Json?
-
   members               User[]
   categories            Category[]
   transactions          Transaction[]
   budgets               Budget[]
-  invites               HouseholdInvite[]
   recurringTransactions RecurringTransaction[]
   tags                  Tag[]
 
   @@map("households")
 }
 
-enum InviteStatus {
-  PENDING
-  ACCEPTED
-  REJECTED
-}
-
-model HouseholdInvite {
-  id        String       @id @default(cuid())
-  status    InviteStatus @default(PENDING)
-  createdAt DateTime     @default(now())
-  expiresAt DateTime
-
-  householdId String
-  household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
-
-  inviterId String
-  inviter   User @relation("InviteSender", fields: [inviterId], references: [id], onDelete: Cascade)
-
-  inviteeId String
-  invitee   User @relation("InviteReceiver", fields: [inviteeId], references: [id], onDelete: Cascade)
-
-  @@unique([householdId, inviteeId, status])
-  @@index([inviteeId, status])
-  @@map("household_invites")
-}
-
 enum TransactionType {
   INCOME
   EXPENSE
-  SETTLEMENT
 }
 
 model Category {
@@ -162,18 +127,10 @@ model Transaction {
 
   recurringOccurrence RecurringOccurrence?
   tags                TransactionTag[]
-  split               Split?
-
-  settlementFromId String?
-  settlementFrom   User?   @relation("settlementFrom", fields: [settlementFromId], references: [id])
-
-  settlementToId String?
-  settlementTo   User?   @relation("settlementTo", fields: [settlementToId], references: [id])
+  splitEntries        SplitEntry[]
 
   @@index([householdId, date])
   @@index([householdId, categoryId])
-  @@index([settlementFromId])
-  @@index([settlementToId])
   @@map("transactions")
 }
 
@@ -234,31 +191,18 @@ model RecurringOccurrence {
   @@map("recurring_occurrences")
 }
 
-model Split {
-  id            String      @id @default(cuid())
-  createdAt     DateTime    @default(now())
+model SplitEntry {
+  id         String    @id @default(cuid())
+  personName String
+  amount     Int
+  paid       Boolean   @default(false)
+  paidAt     DateTime?
 
-  transactionId String      @unique
+  transactionId String
   transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
 
-  shares        SplitShare[]
-
-  @@map("splits")
-}
-
-model SplitShare {
-  id      String @id @default(cuid())
-  amount  Int
-
-  splitId String
-  split   Split  @relation(fields: [splitId], references: [id], onDelete: Cascade)
-
-  userId  String
-  user    User   @relation(fields: [userId], references: [id])
-
-  @@unique([splitId, userId])
-  @@index([userId])
-  @@map("split_shares")
+  @@index([transactionId])
+  @@map("split_entries")
 }
 
 model Tag {

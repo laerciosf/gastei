@@ -70,7 +70,6 @@ export function BudgetList({ budgets, categories, currentMonth }: BudgetListProp
         Definir Orçamento
       </Button>
 
-      {/* Summary strip */}
       {budgets.length > 0 && (
         <div className="grid gap-3 sm:grid-cols-3">
           <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-900/50 dark:bg-blue-950/20">
@@ -132,7 +131,6 @@ export function BudgetList({ budgets, categories, currentMonth }: BudgetListProp
         </div>
       )}
 
-      {/* Budget section header */}
       {budgets.length > 0 && (
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

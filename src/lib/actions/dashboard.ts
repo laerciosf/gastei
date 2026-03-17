@@ -3,7 +3,6 @@
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth-guard";
 import { safeMonth } from "@/lib/utils/date";
-import { TransactionType } from "@prisma/client";
 import type { Prisma } from "@prisma/client";
 import type { TagSummary } from "@/types";
 
@@ -28,7 +27,6 @@ export async function getMonthlySummary(month?: string): Promise<MonthlySummary>
   const dateFilter = {
     householdId: session.user.householdId,
     date: { gte: startDate, lt: endDate },
-    type: { not: TransactionType.SETTLEMENT },
   };
 
   const [totals, byCategory] = await Promise.all([
@@ -47,7 +45,6 @@ export async function getMonthlySummary(month?: string): Promise<MonthlySummary>
   const totalIncome = totals.find((t) => t.type === "INCOME")?._sum.amount ?? 0;
   const totalExpense = totals.find((t) => t.type === "EXPENSE")?._sum.amount ?? 0;
 
-  // Fetch referenced category data
   const categoryIds = byCategory.map((g) => g.categoryId).filter((id): id is string => id !== null);
   const categories = categoryIds.length > 0
     ? await prisma.category.findMany({
@@ -75,6 +72,39 @@ export async function getMonthlySummary(month?: string): Promise<MonthlySummary>
   };
 }
 
+export async function getGlobalBalance(): Promise<number> {
+  const session = await requireAuth();
+  if (!session.user.householdId) return 0;
+
+  const now = new Date();
+  const startDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  const endDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
+
+  const householdId = session.user.householdId;
+
+  const [totals, paidSplits] = await Promise.all([
+    prisma.transaction.groupBy({
+      by: ["type"],
+      where: { householdId, date: { gte: startDate, lt: endDate } },
+      _sum: { amount: true },
+    }),
+    prisma.splitEntry.aggregate({
+      where: {
+        paid: true,
+        paidAt: { gte: startDate, lt: endDate },
+        transaction: { householdId },
+      },
+      _sum: { amount: true },
+    }),
+  ]);
+
+  const income = totals.find((t) => t.type === "INCOME")?._sum.amount ?? 0;
+  const expense = totals.find((t) => t.type === "EXPENSE")?._sum.amount ?? 0;
+  const recovered = paidSplits._sum.amount ?? 0;
+
+  return income - expense + recovered;
+}
+
 export async function getRecentTransactions(limit = 5, month?: string) {
   const session = await requireAuth();
   if (!session.user.householdId) return [];
@@ -83,7 +113,6 @@ export async function getRecentTransactions(limit = 5, month?: string) {
 
   const where: Prisma.TransactionWhereInput = {
     householdId: session.user.householdId,
-    type: { not: TransactionType.SETTLEMENT },
   };
 
   if (month) {
@@ -116,8 +145,7 @@ export async function getTagSummary(month?: string): Promise<TagSummary[]> {
       transaction: {
         householdId: session.user.householdId,
         date: { gte: startDate, lt: endDate },
-        type: { not: TransactionType.SETTLEMENT },
-      },
+          },
     },
     include: {
       tag: { select: { id: true, name: true, color: true } },

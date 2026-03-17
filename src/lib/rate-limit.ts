@@ -1,6 +1,5 @@
 const attempts = new Map<string, { count: number; resetAt: number }>();
 
-// Periodically clean up stale entries
 setInterval(() => {
   const now = Date.now();
   for (const [key, entry] of attempts) {
