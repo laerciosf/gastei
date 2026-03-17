@@ -251,7 +251,7 @@ export async function addGoalEntry(formData: FormData) {
   try {
     await prisma.$transaction(async (tx) => {
       const goal = await tx.savingsGoal.findFirst({
-        where: { id: parsed.data.goalId, householdId: session.user.householdId },
+        where: { id: parsed.data.goalId, householdId: session.user.householdId! },
       });
 
       if (!goal) throw new Error("Goal not found");
