@@ -79,3 +79,24 @@ export interface SplitEntry {
   paid: boolean;
   paidAt: Date | null;
 }
+
+export type GoalType = "SAVINGS" | "SPENDING";
+
+export interface SavingsGoal {
+  id: string;
+  name: string;
+  type: GoalType;
+  targetAmount: number;
+  currentAmount: number;
+  targetDate: string | Date | null;
+  icon: string;
+  color: string;
+  user: { name: string | null };
+}
+
+export interface GoalEntry {
+  id: string;
+  amount: number;
+  note: string | null;
+  createdAt: string | Date;
+}
