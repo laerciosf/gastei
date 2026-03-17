@@ -23,6 +23,7 @@ model User {
   accounts              Account[]
   sessions              Session[]
   recurringTransactions RecurringTransaction[]
+  savingsGoals          SavingsGoal[]
 
   @@index([householdId])
   @@map("users")
@@ -80,6 +81,7 @@ model Household {
   budgets               Budget[]
   recurringTransactions RecurringTransaction[]
   tags                  Tag[]
+  savingsGoals          SavingsGoal[]
 
   @@map("households")
 }
@@ -87,6 +89,11 @@ model Household {
 enum TransactionType {
   INCOME
   EXPENSE
+}
+
+enum GoalType {
+  SAVINGS
+  SPENDING
 }
 
 model Category {
@@ -203,6 +210,45 @@ model SplitEntry {
 
   @@index([transactionId])
   @@map("split_entries")
+}
+
+model SavingsGoal {
+  id            String    @id @default(cuid())
+  name          String
+  type          GoalType
+  targetAmount  Int
+  currentAmount Int       @default(0)
+  targetDate    DateTime?
+  icon          String    @default("piggy-bank")
+  color         String    @default("#10b981")
+
+  householdId String
+  household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User @relation(fields: [userId], references: [id])
+
+  entries GoalEntry[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([householdId])
+  @@map("savings_goals")
+}
+
+model GoalEntry {
+  id     String  @id @default(cuid())
+  amount Int
+  note   String?
+
+  goalId String
+  goal   SavingsGoal @relation(fields: [goalId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([goalId])
+  @@map("goal_entries")
 }
 
 model Tag {
