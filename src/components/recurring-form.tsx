@@ -24,7 +24,7 @@ interface RecurringTransaction {
   description: string;
   amount: number;
   type: TransactionType;
-  dayOfMonth: number;
+  dayOfMonth: number | null;
   startMonth: string;
   endMonth: string | null;
   installments: number | null;
@@ -73,10 +73,13 @@ export function RecurringForm({ open, onOpenChange, categories, recurring }: Rec
       return;
     }
 
-    const dayOfMonth = parseInt(formData.get("dayOfMonth") as string, 10);
-    if (isNaN(dayOfMonth) || dayOfMonth < 1 || dayOfMonth > 28) {
-      toast.error("Dia deve ser entre 1 e 28");
-      return;
+    const dayRaw = formData.get("dayOfMonth") as string;
+    if (dayRaw && dayRaw.trim() !== "") {
+      const dayOfMonth = parseInt(dayRaw, 10);
+      if (isNaN(dayOfMonth) || dayOfMonth < 1 || dayOfMonth > 28) {
+        toast.error("Dia deve ser entre 1 e 28");
+        return;
+      }
     }
 
     setLoading(true);
@@ -148,16 +151,17 @@ export function RecurringForm({ open, onOpenChange, categories, recurring }: Rec
             </Select>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="dayOfMonth">Dia do mês</Label>
+            <Label htmlFor="dayOfMonth">Dia do mês (opcional)</Label>
             <Input
               id="dayOfMonth"
               name="dayOfMonth"
               type="number"
               min={1}
               max={28}
-              defaultValue={recurring?.dayOfMonth ?? 1}
-              required
+              placeholder="Ex: 10"
+              defaultValue={recurring?.dayOfMonth ?? ""}
             />
+            <p className="text-xs text-muted-foreground">Deixe vazio se ainda não sabe o dia</p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="installments">Parcelas (opcional)</Label>

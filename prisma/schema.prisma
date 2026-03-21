@@ -161,7 +161,7 @@ model RecurringTransaction {
   description  String
   amount       Int
   type         TransactionType
-  dayOfMonth   Int
+  dayOfMonth   Int?
   startMonth   String
   endMonth     String?
   installments Int?

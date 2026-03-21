@@ -18,7 +18,7 @@ interface RecurringTransaction {
   description: string;
   amount: number;
   type: TransactionType;
-  dayOfMonth: number;
+  dayOfMonth: number | null;
   startMonth: string;
   endMonth: string | null;
   installments: number | null;
@@ -168,7 +168,7 @@ export function RecurringList({ recurring, occurrences, categories }: RecurringL
                       )}
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      {item.category.name} · Dia {item.dayOfMonth}
+                      {item.category.name}{item.dayOfMonth ? ` · Dia ${item.dayOfMonth}` : ""}
                       {item.startMonth && ` · Início ${formatMonth(item.startMonth)}`}
                     </p>
                   </div>
@@ -180,7 +180,7 @@ export function RecurringList({ recurring, occurrences, categories }: RecurringL
                     </span>
                     {item.installments && item.installments > 1 && (
                       <p className="text-xs text-muted-foreground font-mono tabular-nums">
-                        {formatCurrency(Math.round(item.amount / item.installments))}/mês
+                        {formatCurrency(Math.floor(item.amount / item.installments))}/mês
                       </p>
                     )}
                   </div>
@@ -220,7 +220,7 @@ export function RecurringList({ recurring, occurrences, categories }: RecurringL
                         <span className={`text-sm font-mono tabular-nums ${item.type === "INCOME" ? "text-emerald-600" : "text-rose-600"}`}>
                           {formatCurrency(
                             occ.transaction?.amount
-                              ?? (item.installments ? Math.round(item.amount / item.installments) : item.amount)
+                              ?? (item.installments ? Math.floor(item.amount / item.installments) : item.amount)
                           )}
                         </span>
                       </div>

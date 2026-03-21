@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { toUTCDate } from "@/lib/utils/date";
 import { Receipt, Check, ChevronDown, History, Plus, X, Eye, EyeOff } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -223,7 +224,7 @@ export function BillsList({ currentMonth, carryOver, totalPending, totalPaid, av
               <SelectContent>
                 {availableExpenses.map((tx) => (
                   <SelectItem key={tx.id} value={tx.id}>
-                    {tx.description} — {formatCurrency(tx.amount)} · {format(new Date(tx.date), "dd MMM", { locale: ptBR })}
+                    {tx.description} — {formatCurrency(tx.amount)} · {format(toUTCDate(tx.date), "dd MMM", { locale: ptBR })}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -372,7 +373,7 @@ function TransactionEntries({ tx }: { tx: BillTransaction }) {
             </span>
             {entry.paidAt && (
               <span className="text-[10px] text-muted-foreground shrink-0">
-                {format(new Date(entry.paidAt), "dd/MM", { locale: ptBR })}
+                {format(toUTCDate(entry.paidAt), "dd/MM", { locale: ptBR })}
               </span>
             )}
           </div>

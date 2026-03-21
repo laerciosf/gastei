@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { toUTCDate } from "@/lib/utils/date";
 import { ArrowLeftRight, Receipt } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils/money";
@@ -44,7 +45,7 @@ export function RecentTransactions({ transactions }: { transactions: Transaction
                   <div>
                     <p className="text-sm font-medium">{tx.description}</p>
                     <p className="text-xs text-muted-foreground">
-                      {format(new Date(tx.date), "dd MMM", { locale: ptBR })} · {tx.category?.name ?? "Sem categoria"}
+                      {format(toUTCDate(tx.date), "dd MMM", { locale: ptBR })} · {tx.category?.name ?? "Sem categoria"}
                     </p>
                   </div>
                 </div>

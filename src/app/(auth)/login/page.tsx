@@ -1,17 +1,29 @@
 "use client";
 
+import { Suspense, useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-export default function LoginPage() {
+const AUTH_ERRORS: Record<string, string> = {
+  OAuthAccountNotLinked: "Este email já está cadastrado com outro método de login.",
+  Configuration: "Erro na configuração do servidor. Tente novamente mais tarde.",
+  OAuthSignin: "Erro ao conectar com o provedor. Tente novamente.",
+  OAuthCallback: "Erro no retorno do provedor. Tente novamente.",
+  Default: "Ocorreu um erro ao fazer login. Tente novamente.",
+};
+
+function LoginForm() {
   const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const urlError = searchParams.get("error");
+  const [error, setError] = useState<string | null>(
+    urlError ? AUTH_ERRORS[urlError] ?? AUTH_ERRORS.Default : null
+  );
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -90,5 +102,13 @@ export default function LoginPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   );
 }

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { toUTCDate } from "@/lib/utils/date";
 import { Trash2, Pencil, Plus, ArrowLeftRight, Repeat, List, LayoutGrid, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -258,7 +259,7 @@ function TransactionRow({
               ))}
             </div>
             <p className="text-sm text-muted-foreground">
-              {tx.category?.name ?? "Sem categoria"} · {format(new Date(tx.date), "dd MMM yyyy", { locale: ptBR })}
+              {tx.category?.name ?? "Sem categoria"} · {format(toUTCDate(tx.date), "dd MMM yyyy", { locale: ptBR })}
               {tx.user.name && ` · ${tx.user.name}`}
             </p>
           </div>

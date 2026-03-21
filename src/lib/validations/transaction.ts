@@ -12,4 +12,9 @@ export const transactionSchema = z.object({
   tagIds: z.array(z.string().min(1)).max(2).optional(),
 });
 
+export const installmentTransactionSchema = transactionSchema.extend({
+  installments: z.coerce.number().int().min(2, "Mínimo 2 parcelas").max(48, "Máximo 48 parcelas"),
+});
+
 export type TransactionInput = z.infer<typeof transactionSchema>;
+export type InstallmentTransactionInput = z.infer<typeof installmentTransactionSchema>;

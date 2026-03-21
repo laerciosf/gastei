@@ -39,7 +39,7 @@ function progressTextColor(percentage: number) {
 
 function formatTargetDate(date: Date | null) {
   if (!date) return null;
-  return new Intl.DateTimeFormat("pt-BR", { month: "short", year: "numeric" }).format(new Date(date));
+  return new Intl.DateTimeFormat("pt-BR", { month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(date));
 }
 
 function paceStatus(goal: GoalWithProgress): { label: string; color: string } | null {
@@ -186,7 +186,7 @@ export function GoalList({ goals, currentUserId }: GoalListProps) {
                               </div>
                               <div className="flex items-center gap-2">
                                 <span className="text-xs text-muted-foreground">
-                                  {new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short" }).format(new Date(entry.createdAt))}
+                                  {new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short", timeZone: "UTC" }).format(new Date(entry.createdAt))}
                                 </span>
                                 <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => setDeletingEntryId(entry.id)}>
                                   <Trash2 className="h-3 w-3" />

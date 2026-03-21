@@ -34,7 +34,7 @@ export interface RecurringTransaction {
   description: string;
   amount: number;
   type: TransactionType;
-  dayOfMonth: number;
+  dayOfMonth: number | null;
   startMonth: string;
   endMonth: string | null;
   installments: number | null;

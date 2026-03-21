@@ -103,9 +103,14 @@ export async function toggleOccurrencePaid(occurrenceId: string) {
           description = `${template.description} - Parcela ${installmentIndex}/${template.installments}`;
         }
 
-        const amount = template.installments
-          ? Math.round(template.amount / template.installments)
-          : template.amount;
+        let amount = template.amount;
+        if (template.installments) {
+          const allMonths = monthRange(template.startMonth, template.endMonth ?? occurrence.month);
+          const installmentIndex = allMonths.indexOf(occurrence.month) + 1;
+          const base = Math.floor(template.amount / template.installments);
+          const remainder = template.amount - base * template.installments;
+          amount = installmentIndex <= remainder ? base + 1 : base;
+        }
 
         if (occurrence.transactionId) {
           await tx.transaction.delete({ where: { id: occurrence.transactionId } }).catch(() => {});
@@ -160,7 +165,7 @@ export async function createRecurringTransaction(formData: FormData) {
     amount: formData.get("amount"),
     type: formData.get("type"),
     categoryId: formData.get("categoryId"),
-    dayOfMonth: formData.get("dayOfMonth"),
+    dayOfMonth: formData.get("dayOfMonth") || undefined,
     installments: formData.get("installments") || undefined,
   });
 
@@ -175,7 +180,7 @@ export async function createRecurringTransaction(formData: FormData) {
     return { error: "Categoria não encontrada" };
   }
 
-  const startMonth = getCurrentMonth();
+  const startMonth = addMonths(getCurrentMonth(), 1);
   const installments = parsed.data.installments ?? null;
   const endMonth = installments ? addMonths(startMonth, installments - 1) : null;
 
@@ -185,7 +190,7 @@ export async function createRecurringTransaction(formData: FormData) {
         description: parsed.data.description,
         amount: parseCurrency(parsed.data.amount),
         type: parsed.data.type,
-        dayOfMonth: parsed.data.dayOfMonth,
+        dayOfMonth: parsed.data.dayOfMonth ?? null,
         startMonth,
         endMonth,
         installments,
@@ -218,7 +223,7 @@ export async function updateRecurringTransaction(id: string, formData: FormData)
     amount: formData.get("amount"),
     type: formData.get("type"),
     categoryId: formData.get("categoryId"),
-    dayOfMonth: formData.get("dayOfMonth"),
+    dayOfMonth: formData.get("dayOfMonth") || undefined,
     installments: formData.get("installments") || undefined,
   });
 
@@ -253,7 +258,7 @@ export async function updateRecurringTransaction(id: string, formData: FormData)
         description: parsed.data.description,
         amount: parseCurrency(parsed.data.amount),
         type: parsed.data.type,
-        dayOfMonth: parsed.data.dayOfMonth,
+        dayOfMonth: parsed.data.dayOfMonth ?? null,
         endMonth: updatedEndMonth,
         installments: updatedInstallments,
         categoryId: parsed.data.categoryId,
@@ -307,7 +312,6 @@ export async function materializeRecurring() {
     where: {
       householdId,
       active: true,
-      startMonth: { lte: currentMonth },
     },
     select: {
       id: true,
@@ -340,7 +344,8 @@ export async function materializeRecurring() {
   const endOfYear = `${currentMonth.split("-")[0]}-12`;
 
   for (const template of templates) {
-    const lastMonth = template.installments ? (template.endMonth ?? currentMonth) : endOfYear;
+    const futureEnd = template.endMonth ?? endOfYear;
+    const lastMonth = futureEnd > endOfYear && !template.installments ? endOfYear : futureEnd;
     const allMonths = monthRange(template.startMonth, lastMonth);
 
     for (const month of allMonths) {
